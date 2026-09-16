@@ -2,7 +2,18 @@
 // bridge's storage, which outlives the WebView, and mirrored to localStorage
 // for an ordinary browser (the same arrangement as ../simple-ai/sc-even).
 
-export const POSITIONS = ["left-top", "right-top", "left-bottom", "right-bottom", "center"] as const;
+// A 3 × 3 grid in reading order: `<horizontal>-<vertical>`, with the middle cell just "center".
+export const POSITIONS = [
+  "left-top",
+  "center-top",
+  "right-top",
+  "left-center",
+  "center",
+  "right-center",
+  "left-bottom",
+  "center-bottom",
+  "right-bottom",
+] as const;
 export const SIZES = ["big", "medium", "small", "tiny"] as const;
 export const BLINKS = ["none", "text", "background"] as const;
 export type Position = (typeof POSITIONS)[number];

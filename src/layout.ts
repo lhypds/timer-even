@@ -56,23 +56,32 @@ export const FONT_PX: Record<Size, number> = {
 };
 const DIGIT_HEIGHT = 0.72;
 
+type Vertical = "top" | "center" | "bottom";
+
+/** A position's two axes: `left-top` is left and top; the bare `center` is both. */
+function axesOf(position: Position): [Align, Vertical] {
+  if (position === "center") return ["center", "center"];
+  return position.split("-") as [Align, Vertical];
+}
+
 export function alignFor(position: Position): Align {
-  return position === "center" ? "center" : position.startsWith("left") ? "left" : "right";
+  return axesOf(position)[0];
 }
 
 export function place(width: number, height: number, position: Position): Rect {
+  const [horizontal, vertical] = axesOf(position);
   const x =
-    position === "center"
-      ? Math.round((SCREEN_WIDTH - width) / 2)
-      : position.startsWith("left")
-        ? MARGIN
-        : SCREEN_WIDTH - MARGIN - width;
+    horizontal === "left"
+      ? MARGIN
+      : horizontal === "right"
+        ? SCREEN_WIDTH - MARGIN - width
+        : Math.round((SCREEN_WIDTH - width) / 2);
   const y =
-    position === "center"
-      ? Math.round((SCREEN_HEIGHT - height) / 2)
-      : position.endsWith("top")
-        ? MARGIN
-        : SCREEN_HEIGHT - MARGIN - height;
+    vertical === "top"
+      ? MARGIN
+      : vertical === "bottom"
+        ? SCREEN_HEIGHT - MARGIN - height
+        : Math.round((SCREEN_HEIGHT - height) / 2);
   return { x, y, width, height };
 }
 

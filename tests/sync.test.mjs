@@ -5,7 +5,7 @@ import { pathToFileURL } from "node:url";
 import { isFinished, parseState, secondsAt, templateOf, timeText } from "../src/protocol.ts";
 import { TimerDisplay } from "../src/display.ts";
 import { FONT_PX, IMAGE_MAX_HEIGHT, IMAGE_MAX_WIDTH, IMAGE_MIN, MARGIN, layoutFor } from "../src/layout.ts";
-import { DEFAULT_SETTINGS, parseSettings, withQueryOverrides } from "../src/settings.ts";
+import { DEFAULT_SETTINGS, POSITIONS, parseSettings, withQueryOverrides } from "../src/settings.ts";
 import { glassesTransport } from "../src/glasses.ts";
 import { PIXEL_HEIGHT, pixelWidth } from "../src/pixelfont.ts";
 import { isTap } from "../src/events.ts";
@@ -193,6 +193,31 @@ test("sizes step down below the native face and every bitmap fits the display", 
   assert.equal(center.align, "center");
   assert.equal(center.rect.x, Math.round((576 - center.rect.width) / 2));
   assert.equal(center.rect.y, Math.round((288 - center.rect.height) / 2));
+
+  // The edge-centred cells: centred on one axis, at the margin on the other.
+  const midX = (l) => Math.round((576 - l.rect.width) / 2);
+  const midY = (l) => Math.round((288 - l.rect.height) / 2);
+  const topCenter = layout("medium", "center-top");
+  assert.deepEqual([topCenter.rect.x, topCenter.rect.y, topCenter.align], [midX(topCenter), MARGIN, "center"]);
+  const bottomCenter = layout("medium", "center-bottom");
+  assert.deepEqual(
+    [bottomCenter.rect.x, bottomCenter.rect.y + bottomCenter.rect.height, bottomCenter.align],
+    [midX(bottomCenter), 288 - MARGIN, "center"],
+  );
+  const leftCenter = layout("medium", "left-center");
+  assert.deepEqual([leftCenter.rect.x, leftCenter.rect.y, leftCenter.align], [MARGIN, midY(leftCenter), "left"]);
+  const rightCenter = layout("medium", "right-center");
+  assert.deepEqual(
+    [rightCenter.rect.x + rightCenter.rect.width, rightCenter.rect.y, rightCenter.align],
+    [576 - MARGIN, midY(rightCenter), "right"],
+  );
+  assert.equal(POSITIONS.length, 9, "a full 3 × 3 grid");
+  for (const position of POSITIONS) {
+    const { rect } = layout("big", position, "88:88:88.88");
+    assert.ok(rect.x >= MARGIN && rect.x + rect.width <= 576 - MARGIN, `${position} inside the display horizontally`);
+    assert.ok(rect.y >= MARGIN && rect.y + rect.height <= 288 - MARGIN, `${position} inside the display vertically`);
+  }
+  assert.equal(parseSettings({ position: "center-top" }).position, "center-top");
   assert.notEqual(topLeft.key, TINY.key);
   assert.equal(layout("tiny").key, TINY.key, "same inputs, same key");
   assert.notEqual(layout("tiny", "right-bottom", "88:88").key, TINY.key, "the tail widens the box");

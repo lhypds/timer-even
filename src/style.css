@@ -280,6 +280,59 @@ body {
   background: var(--chrome);
 }
 
+/* The position picker: a rectangle the shape of the 576 × 288 display, cut
+   into nine cells. Each carries a dot where the time would sit; the chosen
+   cell is tinted and its dot inked. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 4px;
+  width: 100%;
+  aspect-ratio: 2 / 1;
+  padding: 4px;
+  border-radius: 8px; /* radius-ok */
+  background: var(--chrome-field);
+}
+
+.grid__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  border-radius: 8px; /* radius-ok */
+  background: transparent;
+  cursor: pointer;
+}
+
+.grid__cell::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%; /* radius-ok */
+  background: var(--chrome-track);
+}
+
+@media (hover: hover) {
+  .grid__cell:hover {
+    background: var(--chrome);
+  }
+}
+
+.grid__cell--active {
+  background: var(--chrome);
+}
+
+.grid__cell--active::before {
+  background: var(--chrome-ink);
+}
+
+.grid__cell:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--chrome-ink);
+}
+
 .modal__actions {
   display: flex;
   justify-content: flex-end;

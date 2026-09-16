@@ -16,10 +16,14 @@ const REFRESH_SVG = `
 
 const POSITION_LABELS: Record<Position, string> = {
   "left-top": "Top left",
+  "center-top": "Top center",
   "right-top": "Top right",
-  "left-bottom": "Bottom left",
-  "right-bottom": "Bottom right",
+  "left-center": "Left center",
   center: "Center",
+  "right-center": "Right center",
+  "left-bottom": "Bottom left",
+  "center-bottom": "Bottom center",
+  "right-bottom": "Bottom right",
 };
 const SIZE_LABELS: Record<Size, string> = {
   big: "Big",
@@ -46,7 +50,7 @@ export interface UIOptions {
   onSave(settings: GlassesSettings): void | Promise<void>;
 }
 
-interface Dropdown<T extends string> {
+interface Control<T extends string> {
   el: HTMLElement;
   get(): T;
   set(value: T): void;
@@ -59,7 +63,7 @@ document.addEventListener("click", (event) => {
   for (const close of closers) close(event.target as Node);
 });
 
-function createDropdown<T extends string>(items: Array<{ value: T; label: string }>): Dropdown<T> {
+function createDropdown<T extends string>(items: Array<{ value: T; label: string }>): Control<T> {
   const el = document.createElement("div");
   el.className = "select";
   const button = document.createElement("button");
@@ -101,6 +105,38 @@ function createDropdown<T extends string>(items: Array<{ value: T; label: string
     if (!open) el.classList.add("select--open");
   });
   closers.push(close);
+  set(current);
+  return { el, get: () => current, set };
+}
+
+// The position is picked on a rectangle the shape of the display: nine cells
+// in the grid's reading order, the chosen one marked.
+function createPositionGrid(): Control<Position> {
+  const el = document.createElement("div");
+  el.className = "grid";
+  el.setAttribute("role", "radiogroup");
+  el.setAttribute("aria-label", "Position");
+
+  let current: Position = POSITIONS[0];
+  const cells = new Map<Position, HTMLButtonElement>();
+  const set = (value: Position) => {
+    current = value;
+    for (const [v, cell] of cells) {
+      const active = v === current;
+      cell.classList.toggle("grid__cell--active", active);
+      cell.setAttribute("aria-checked", String(active));
+    }
+  };
+  for (const value of POSITIONS) {
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "grid__cell";
+    cell.setAttribute("role", "radio");
+    cell.setAttribute("aria-label", POSITION_LABELS[value]);
+    cell.addEventListener("click", () => set(value));
+    el.appendChild(cell);
+    cells.set(value, cell);
+  }
   set(current);
   return { el, get: () => current, set };
 }
@@ -151,7 +187,7 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
   const modal = q<HTMLElement>("[data-settings-modal]");
   const milliseconds = q<HTMLInputElement>("[data-milliseconds]");
   const saved = q<HTMLElement>("[data-saved]");
-  const position = createDropdown(POSITIONS.map((value) => ({ value, label: POSITION_LABELS[value] })));
+  const position = createPositionGrid();
   const size = createDropdown(SIZES.map((value) => ({ value, label: SIZE_LABELS[value] })));
   const blink = createDropdown(BLINKS.map((value) => ({ value, label: BLINK_LABELS[value] })));
   q("[data-position]").appendChild(position.el);
