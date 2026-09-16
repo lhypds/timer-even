@@ -210,12 +210,17 @@ async function connectGlasses() {
       } else if (type === OsEventTypeList.FOREGROUND_EXIT_EVENT) {
         display?.suspend();
       } else if (type === OsEventTypeList.DOUBLE_CLICK_EVENT) {
-        // Standard Even Hub exit gesture. Phone timer continues independently;
-        // the press that began this double tap is not a tap.
+        // Standard Even Hub exit gesture: the host puts up its confirmation and
+        // the reader decides. Nothing is torn down yet — a reader who says no
+        // keeps a ticking timer, and one who says yes comes back as a system
+        // exit. The press that began this double tap is not a tap.
+        disarmTap();
+        void bridge.shutDownPageContainer(1).catch(console.error);
+      } else if (type === OsEventTypeList.SYSTEM_EXIT_EVENT || type === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
+        // The reader confirmed the exit, or the host is taking the app down.
+        // Phone timer continues independently; the page container goes now.
         close();
         void bridge.shutDownPageContainer(0).catch(console.error);
-      } else if (type === OsEventTypeList.SYSTEM_EXIT_EVENT || type === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
-        close();
       }
     });
     function close() {
