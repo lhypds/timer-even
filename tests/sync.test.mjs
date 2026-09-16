@@ -2,41 +2,19 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import {
-  isFinished,
-  parseState,
-  secondsAt,
-  templateOf,
-  timeText,
-} from "../src/protocol.ts";
+import { isFinished, parseState, secondsAt, templateOf, timeText } from "../src/protocol.ts";
 import { TimerDisplay } from "../src/display.ts";
-import {
-  FONT_PX,
-  IMAGE_MAX_HEIGHT,
-  IMAGE_MAX_WIDTH,
-  IMAGE_MIN,
-  MARGIN,
-  layoutFor,
-} from "../src/layout.ts";
-import {
-  DEFAULT_SETTINGS,
-  parseSettings,
-  withQueryOverrides,
-} from "../src/settings.ts";
+import { FONT_PX, IMAGE_MAX_HEIGHT, IMAGE_MAX_WIDTH, IMAGE_MIN, MARGIN, layoutFor } from "../src/layout.ts";
+import { DEFAULT_SETTINGS, parseSettings, withQueryOverrides } from "../src/settings.ts";
 import { glassesTransport } from "../src/glasses.ts";
 import { PIXEL_HEIGHT, pixelWidth } from "../src/pixelfont.ts";
 import { isTap } from "../src/events.ts";
 import { Blinker } from "../src/blink.ts";
 import { rasterize } from "../src/raster.ts";
 
-const timerRoot =
-  process.env.TIMER_PROJECT_DIR || resolve(import.meta.dirname, "../../timer");
-const { sampleClock } = await import(
-  pathToFileURL(resolve(timerRoot, "src/utils/timerClock.ts"))
-);
-const { createEvenTimerSender } = await import(
-  pathToFileURL(resolve(timerRoot, "src/utils/evenTimerSync.ts"))
-);
+const timerRoot = process.env.TIMER_PROJECT_DIR || resolve(import.meta.dirname, "../../timer");
+const { sampleClock } = await import(pathToFileURL(resolve(timerRoot, "src/utils/timerClock.ts")));
+const { createEvenTimerSender } = await import(pathToFileURL(resolve(timerRoot, "src/utils/evenTimerSync.ts")));
 const session = "a-test-session-123456";
 const base = {
   source: "gcc3-timer",
@@ -60,9 +38,7 @@ const BIG = layout("big", "right-bottom", "88:88:88.88");
 const frame = (text, l = TINY) => ({ layout: l, text });
 // Bytes stand in for pixels: two per tile, derived from the text.
 const fakeRasterize = (text, l, invert) =>
-  l.tiles.map((_, i) =>
-    Uint8Array.of((text ? text.charCodeAt(i) : 0) + (invert ? 128 : 0), i),
-  );
+  l.tiles.map((_, i) => Uint8Array.of((text ? text.charCodeAt(i) : 0) + (invert ? 128 : 0), i));
 
 test("sender and glasses advance from the same wall-clock anchor after suspension", () => {
   for (const mode of ["timer", "stopwatch"]) {
@@ -84,42 +60,20 @@ test("pause, reset, editing midnight, hour display, and completion", () => {
   assert.equal(timeText({ ...paused, countTo: 0 }, 900000), "00:00");
   assert.equal(timeText({ ...paused, countTo: 1439 }, 900000), "23:59");
   assert.equal(secondsAt(base, base.sampledAt - 1000), 300);
-  assert.equal(
-    isFinished(base, base.sampledAt + 400000),
-    true,
-    "a running countdown at zero",
-  );
+  assert.equal(isFinished(base, base.sampledAt + 400000), true, "a running countdown at zero");
   assert.equal(isFinished(base, base.sampledAt), false);
-  assert.equal(
-    isFinished({ ...base, running: false, seconds: 0 }, 900000),
-    false,
-    "paused at zero is reset, not finished",
-  );
-  assert.equal(
-    isFinished({ ...base, mode: "stopwatch", seconds: 0 }, base.sampledAt),
-    false,
-  );
-  assert.equal(
-    isFinished({ ...base, seconds: 0, countTo: 5 }, 900000),
-    false,
-    "editing a clock time is not finishing",
-  );
+  assert.equal(isFinished({ ...base, running: false, seconds: 0 }, 900000), false, "paused at zero is reset, not finished");
+  assert.equal(isFinished({ ...base, mode: "stopwatch", seconds: 0 }, base.sampledAt), false);
+  assert.equal(isFinished({ ...base, seconds: 0, countTo: 5 }, 900000), false, "editing a clock time is not finishing");
 });
 
 test("milliseconds show as centiseconds below an hour, as on the phone", () => {
   const paused = { ...base, running: false, seconds: 61.5 };
   assert.equal(timeText(paused, 900000, true), "01:01.50");
   assert.equal(timeText(paused, 900000, false), "01:01");
-  assert.equal(
-    timeText({ ...paused, seconds: 3661.5 }, 900000, true),
-    "01:01:01",
-    "the seconds take the tail above an hour",
-  );
+  assert.equal(timeText({ ...paused, seconds: 3661.5 }, 900000, true), "01:01:01", "the seconds take the tail above an hour");
   assert.equal(timeText({ ...paused, countTo: 90 }, 900000, true), "01:30");
-  assert.equal(
-    timeText({ ...base, seconds: 300 }, base.sampledAt + 250, true),
-    "04:59.75",
-  );
+  assert.equal(timeText({ ...base, seconds: 300 }, base.sampledAt + 250, true), "04:59.75");
   assert.equal(templateOf("04:59.75"), "88:88.88");
   assert.equal(templateOf("--:--"), "--:--");
 });
@@ -182,16 +136,8 @@ test("settings fall back field by field", () => {
       blink: "background",
     },
   );
-  assert.equal(
-    parseSettings({ blink: true }).blink,
-    "text",
-    "the old switch, on",
-  );
-  assert.equal(
-    parseSettings({ blink: false }).blink,
-    "none",
-    "the old switch, off",
-  );
+  assert.equal(parseSettings({ blink: true }).blink, "text", "the old switch, on");
+  assert.equal(parseSettings({ blink: false }).blink, "none", "the old switch, off");
 });
 
 test("URL overrides hold for one launch and ignore junk", () => {
@@ -202,49 +148,25 @@ test("URL overrides hold for one launch and ignore junk", () => {
     blink: "none",
   };
   assert.deepEqual(withQueryOverrides(saved, ""), saved);
-  assert.deepEqual(
-    withQueryOverrides(
-      saved,
-      "?size=tiny&position=center&milliseconds=1&blink=background",
-    ),
-    {
-      milliseconds: true,
-      position: "center",
-      size: "tiny",
-      blink: "background",
-    },
-  );
+  assert.deepEqual(withQueryOverrides(saved, "?size=tiny&position=center&milliseconds=1&blink=background"), {
+    milliseconds: true,
+    position: "center",
+    size: "tiny",
+    blink: "background",
+  });
   assert.equal(withQueryOverrides(saved, "?blink=on").blink, "text");
-  assert.deepEqual(
-    withQueryOverrides(saved, "?size=huge&position=nowhere&blink=maybe"),
-    saved,
-  );
+  assert.deepEqual(withQueryOverrides(saved, "?size=huge&position=nowhere&blink=maybe"), saved);
 });
 
 test("sizes step down below the native face and every bitmap fits the display", () => {
   assert.deepEqual(FONT_PX, { big: 84, medium: 40, small: 18, tiny: 7 });
-  assert.ok(
-    FONT_PX.small * 0.72 < 15,
-    "small digits come out under the native face, whose digits are 15 px tall",
-  );
-  assert.equal(
-    FONT_PX.tiny,
-    PIXEL_HEIGHT,
-    "tiny is the 5 × 7 pixel face: 7 px digits against the native face's 15",
-  );
+  assert.ok(FONT_PX.small * 0.72 < 15, "small digits come out under the native face, whose digits are 15 px tall");
+  assert.equal(FONT_PX.tiny, PIXEL_HEIGHT, "tiny is the 5 × 7 pixel face: 7 px digits against the native face's 15");
   assert.equal(TINY.pixel, true);
   assert.equal(layout("small").pixel, false);
   assert.equal(TINY.rect.width, pixelWidth("88:88.88") + 4);
-  assert.equal(
-    TINY.rect.height,
-    IMAGE_MIN,
-    "the smallest an image container may be",
-  );
-  assert.equal(
-    TINY.anchor.baseline - PIXEL_HEIGHT,
-    Math.round((IMAGE_MIN - PIXEL_HEIGHT) / 2),
-    "the dots sit mid-box",
-  );
+  assert.equal(TINY.rect.height, IMAGE_MIN, "the smallest an image container may be");
+  assert.equal(TINY.anchor.baseline - PIXEL_HEIGHT, Math.round((IMAGE_MIN - PIXEL_HEIGHT) / 2), "the dots sit mid-box");
   assert.deepEqual(
     TINY.band,
     {
@@ -266,26 +188,17 @@ test("sizes step down below the native face and every bitmap fits the display", 
   assert.equal(TINY.align, "right");
 
   const topLeft = layout("tiny", "left-top");
-  assert.deepEqual(
-    [topLeft.rect.x, topLeft.rect.y, topLeft.align],
-    [MARGIN, MARGIN, "left"],
-  );
+  assert.deepEqual([topLeft.rect.x, topLeft.rect.y, topLeft.align], [MARGIN, MARGIN, "left"]);
   const center = layout("medium", "center");
   assert.equal(center.align, "center");
   assert.equal(center.rect.x, Math.round((576 - center.rect.width) / 2));
   assert.equal(center.rect.y, Math.round((288 - center.rect.height) / 2));
   assert.notEqual(topLeft.key, TINY.key);
   assert.equal(layout("tiny").key, TINY.key, "same inputs, same key");
-  assert.notEqual(
-    layout("tiny", "right-bottom", "88:88").key,
-    TINY.key,
-    "the tail widens the box",
-  );
+  assert.notEqual(layout("tiny", "right-bottom", "88:88").key, TINY.key, "the tail widens the box");
 
   assert.equal(BIG.font, FONT_PX.big);
-  assert.ok(
-    BIG.rect.x >= MARGIN && BIG.rect.x + BIG.rect.width <= 576 - MARGIN,
-  );
+  assert.ok(BIG.rect.x >= MARGIN && BIG.rect.x + BIG.rect.width <= 576 - MARGIN);
   assert.equal(BIG.tiles.length, 2, "wider than one container, so tiled");
   let x = BIG.rect.x;
   for (const tile of BIG.tiles) {
@@ -304,19 +217,12 @@ test("sizes step down below the native face and every bitmap fits the display", 
 });
 
 test("the pixel face draws crisp dots without a canvas", () => {
-  assert.equal(
-    pixelWidth("88:88.88"),
-    8 * 5 - 2 * 4 + 7,
-    "five-wide digits, one-wide colon and point, one-dot gaps",
-  );
+  assert.equal(pixelWidth("88:88.88"), 8 * 5 - 2 * 4 + 7, "five-wide digits, one-wide colon and point, one-dot gaps");
   assert.equal(pixelWidth("--:--"), 4 * 3 + 1 + 4);
   const [tile] = rasterize("05:00", TINY);
   assert.equal(tile.length, TINY.rect.width * TINY.rect.height);
   const lit = (bytes) => bytes.reduce((n, b) => n + (b === 255 ? 1 : 0), 0);
-  assert.ok(
-    lit(tile) > 40 && lit(tile) < 120,
-    "a handful of dots, nothing grey",
-  );
+  assert.ok(lit(tile) > 40 && lit(tile) < 120, "a handful of dots, nothing grey");
   assert.ok(tile.every((b) => b === 0 || b === 255));
   const rows = new Set();
   tile.forEach((b, i) => {
@@ -326,20 +232,12 @@ test("the pixel face draws crisp dots without a canvas", () => {
   assert.equal(Math.min(...rows), TINY.anchor.baseline - PIXEL_HEIGHT);
   const [inverted] = rasterize("05:00", TINY, true);
   const bandRows = TINY.band.bottom - TINY.band.top;
-  assert.equal(
-    lit(inverted),
-    bandRows * TINY.rect.width - lit(tile),
-    "the same dots, cut out of a lit band",
-  );
+  assert.equal(lit(inverted), bandRows * TINY.rect.width - lit(tile), "the same dots, cut out of a lit band");
   assert.ok(rasterize("", TINY)[0].every((b) => b === 0));
   const [blankLit] = rasterize("", TINY, true);
   blankLit.forEach((b, i) => {
     const row = Math.floor(i / TINY.rect.width);
-    assert.equal(
-      b,
-      row >= TINY.band.top && row < TINY.band.bottom ? 255 : 0,
-      `row ${row} is lit only inside the band`,
-    );
+    assert.equal(b, row >= TINY.band.top && row < TINY.band.bottom ? 255 : 0, `row ${row} is lit only inside the band`);
   });
   const leftLayout = layout("tiny", "left-top");
   const left = rasterize("05:00", leftLayout)[0];
@@ -347,11 +245,7 @@ test("the pixel face draws crisp dots without a canvas", () => {
   left.forEach((b, i) => {
     if (b) columns.add(i % leftLayout.rect.width);
   });
-  assert.equal(
-    Math.min(...columns),
-    2,
-    "left-aligned dots start two pixels in",
-  );
+  assert.equal(Math.min(...columns), 2, "left-aligned dots start two pixels in");
   assert.equal(Math.max(...columns), 2 + pixelWidth("05:00") - 1);
 });
 
@@ -384,8 +278,7 @@ function senderHarness(origin = "https://app.example") {
     type: "request-state",
     session,
   };
-  const say = (data, overrides = {}) =>
-    receive({ source: parent, origin, data, ...overrides });
+  const say = (data, overrides = {}) => receive({ source: parent, origin, data, ...overrides });
   return {
     sender,
     sent,
@@ -421,14 +314,8 @@ test("handshake restricts source, origin and session; sender is inert until conn
   assert.equal(h.sent.length, 1, "duplicate ticks are coalesced");
   h.set({ ...base, seconds: 299, sampledAt: 101000 });
   h.sender.publish();
-  assert.ok(
-    h.sent[1].data.sequence > h.sent[0].data.sequence,
-    "sequence numbers rise",
-  );
-  assert.ok(
-    Number.isSafeInteger(h.sent[1].data.sequence) &&
-      parseState(h.sent[1].data, session),
-  );
+  assert.ok(h.sent[1].data.sequence > h.sent[0].data.sequence, "sequence numbers rise");
+  assert.ok(Number.isSafeInteger(h.sent[1].data.sequence) && parseState(h.sent[1].data, session));
   h.set({ ...base, running: false });
   h.sender.publish();
   assert.equal(h.sent[2].data.running, false);
@@ -454,54 +341,22 @@ test("a toggle from the glasses is honoured only from the connected companion", 
   h.toggle({
     data: { source: "gcc3-timer-even", version: 1, type: "pause", session },
   });
-  assert.deepEqual(
-    h.commands,
-    [],
-    "nor from anyone else, nor for a command that does not exist",
-  );
+  assert.deepEqual(h.commands, [], "nor from anyone else, nor for a command that does not exist");
   h.toggle();
   assert.deepEqual(h.commands, ["toggle"]);
   assert.equal(h.sent.length, 1, "a command is not a state request");
 });
 
 test("a tap is a click event, or the typeless press the host sends for one", () => {
-  assert.equal(
-    isTap({ sysEvent: { eventType: 0, eventSource: 1 } }),
-    true,
-    "CLICK_EVENT spelled out",
-  );
-  assert.equal(
-    isTap({ sysEvent: { eventSource: 1 } }),
-    true,
-    "the zero dropped by protobuf, source from the right arm",
-  );
+  assert.equal(isTap({ sysEvent: { eventType: 0, eventSource: 1 } }), true, "CLICK_EVENT spelled out");
+  assert.equal(isTap({ sysEvent: { eventSource: 1 } }), true, "the zero dropped by protobuf, source from the right arm");
   assert.equal(isTap({ sysEvent: { eventSource: 3 } }), true, "left arm");
   assert.equal(isTap({ sysEvent: { eventSource: 2 } }), true, "ring");
-  assert.equal(
-    isTap({ sysEvent: { eventSource: 0 } }),
-    false,
-    "a dummy source is not a press",
-  );
-  assert.equal(
-    isTap({ textEvent: { containerID: 1, containerName: "timer" } }),
-    true,
-    "a typeless container event",
-  );
-  assert.equal(
-    isTap({ textEvent: { containerID: 1, eventType: 3 } }),
-    false,
-    "a double tap is the exit gesture",
-  );
-  assert.equal(
-    isTap({ sysEvent: { eventType: 4, eventSource: 1 } }),
-    false,
-    "foreground enter",
-  );
-  assert.equal(
-    isTap({ sysEvent: { eventType: 9, eventSource: 1 } }),
-    false,
-    "a long press",
-  );
+  assert.equal(isTap({ sysEvent: { eventSource: 0 } }), false, "a dummy source is not a press");
+  assert.equal(isTap({ textEvent: { containerID: 1, containerName: "timer" } }), true, "a typeless container event");
+  assert.equal(isTap({ textEvent: { containerID: 1, eventType: 3 } }), false, "a double tap is the exit gesture");
+  assert.equal(isTap({ sysEvent: { eventType: 4, eventSource: 1 } }), false, "foreground enter");
+  assert.equal(isTap({ sysEvent: { eventType: 9, eventSource: 1 } }), false, "a long press");
   assert.equal(isTap({ audioEvent: { audioPcm: new Uint8Array(2) } }), false);
   assert.equal(isTap({}), false);
 });
@@ -517,10 +372,7 @@ test("a re-created sender continues above its predecessor, so a remount is not o
   await new Promise((r) => setTimeout(r, 5));
   const second = senderHarness();
   second.request();
-  assert.ok(
-    second.sent[0].data.sequence > last,
-    "the clock has moved on further than the old sender counted",
-  );
+  assert.ok(second.sent[0].data.sequence > last, "the clock has moved on further than the old sender counted");
 });
 
 test("opaque native origins respond only to their parent with the session token", () => {
@@ -584,39 +436,15 @@ test("a refused update rebuilds the page; reconnect resends paused text", async 
 
 test("the blink keeps the phone's rate on a quick link and never skips a phase on a slow one", () => {
   const quick = new Blinker(500);
-  assert.equal(
-    quick.phase(0, false, true),
-    false,
-    "nothing blinks before the countdown ends",
-  );
-  assert.equal(
-    quick.phase(1000, true, false),
-    false,
-    "the frame at zero has not landed yet",
-  );
-  assert.equal(
-    quick.phase(1100, true, true),
-    true,
-    "the first flip comes as soon as it has",
-  );
+  assert.equal(quick.phase(0, false, true), false, "nothing blinks before the countdown ends");
+  assert.equal(quick.phase(1000, true, false), false, "the frame at zero has not landed yet");
+  assert.equal(quick.phase(1100, true, true), true, "the first flip comes as soon as it has");
   assert.equal(quick.phase(1500, true, true), true, "held for the period");
   assert.equal(quick.phase(1600, true, true), false);
-  assert.equal(
-    quick.phase(2100, true, true),
-    true,
-    "exactly two flips a second, like the phone",
-  );
+  assert.equal(quick.phase(2100, true, true), true, "exactly two flips a second, like the phone");
   assert.equal(quick.phase(2600, true, true), false);
-  assert.equal(
-    quick.phase(2700, false, true),
-    false,
-    "reset to dark once the countdown is paused",
-  );
-  assert.equal(
-    quick.phase(2800, true, true),
-    true,
-    "and starts afresh on the next finish",
-  );
+  assert.equal(quick.phase(2700, false, true), false, "reset to dark once the countdown is paused");
+  assert.equal(quick.phase(2800, true, true), true, "and starts afresh on the next finish");
 
   // A link where each frame takes 800 ms to land.
   const slow = new Blinker(500);
@@ -637,11 +465,7 @@ test("the blink keeps the phone's rate on a quick link and never skips a phase o
     `each phase lasts one frame, not two: ${gaps}`,
   );
   // The first flip waits out one period from a cold start, then one every 800 ms up to 6 s.
-  assert.deepEqual(
-    flips,
-    [500, 1300, 2100, 2900, 3700, 4500, 5300],
-    "no phase is skipped",
-  );
+  assert.deepEqual(flips, [500, 1300, 2100, 2900, 3700, 4500, 5300], "no phase is skipped");
 });
 
 test("a display is settled once the frame asked for is the one on the glass", async () => {
@@ -663,11 +487,7 @@ test("a display is settled once the frame asked for is the one on the glass", as
   await display.paint(frame("04:59"));
   assert.equal(display.settled(), true);
   display.reconnect();
-  assert.equal(
-    display.settled(),
-    false,
-    "a reconnect owes the glass its frame again",
-  );
+  assert.equal(display.settled(), false, "a reconnect owes the glass its frame again");
 });
 
 test("a changed layout rebuilds the page once; blank and inverted frames are writes", async () => {
@@ -710,15 +530,7 @@ function fakeBridge(startResults = [0]) {
       refuse = value;
     },
     async createStartUpPageContainer(page) {
-      calls.push([
-        "start",
-        page.containerTotalNum,
-        page.textObject.map((t) => [
-          t.containerID,
-          t.isEventCapture,
-          t.content,
-        ]),
-      ]);
+      calls.push(["start", page.containerTotalNum, page.textObject.map((t) => [t.containerID, t.isEventCapture, t.content])]);
       return startResults.length > 1 ? startResults.shift() : startResults[0];
     },
     async rebuildPageContainer(page) {
@@ -726,12 +538,7 @@ function fakeBridge(startResults = [0]) {
         "rebuild",
         page.containerTotalNum,
         page.textObject[0].content,
-        page.imageObject.map((i) => [
-          i.containerID,
-          i.width,
-          i.height,
-          i.zOrderIndex,
-        ]),
+        page.imageObject.map((i) => [i.containerID, i.width, i.height, i.zOrderIndex]),
       ]);
       return true;
     },
@@ -757,12 +564,7 @@ test("a refused start-up page is retried; every build after it is a rebuild", as
     ["rebuild", 2, " ", [[2, TINY.rect.width, TINY.rect.height, 1]]],
     ["image", 2, [48, 0]],
     ["image", 2, [49, 0]],
-    [
-      "rebuild",
-      3,
-      " ",
-      BIG.tiles.map((t, i) => [2 + i, t.width, t.height, 1 + i]),
-    ],
+    ["rebuild", 3, " ", BIG.tiles.map((t, i) => [2 + i, t.width, t.height, 1 + i])],
     ["image", 2, [48, 0]],
     ["image", 3, [52, 1]],
   ]);
@@ -786,11 +588,7 @@ test("ticks send only the tiles whose bytes moved; a refused tile is offered aga
   await transport.update(frame("05:00", BIG));
   assert.deepEqual(bridge.calls, [], "unchanged tiles are not resent");
   await transport.update(frame("15:00", BIG));
-  assert.deepEqual(
-    bridge.calls,
-    [["image", 2, [49, 0]]],
-    "only the tile whose bytes moved",
-  );
+  assert.deepEqual(bridge.calls, [["image", 2, [49, 0]]], "only the tile whose bytes moved");
   bridge.calls.length = 0;
   await transport.update(frame("", BIG));
   assert.deepEqual(

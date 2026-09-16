@@ -2,9 +2,7 @@
    follows ../simple-ai/sc-even: one light field, white controls, no outlines,
    8 px corners, the platform's own UI face. */
 :root {
-  --font-ui:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    Arial, sans-serif;
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --chrome: rgb(238 238 238);
   --chrome-ink: #000000; /* text and filled controls on the chrome */
   --chrome-muted: #6b7280; /* labels, hints, the status line */

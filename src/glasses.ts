@@ -12,11 +12,7 @@ import type { Frame, FrameTransport } from "./display.ts";
 import type { Layout } from "./layout.ts";
 import { rasterize as defaultRasterize } from "./raster.ts";
 
-export type Rasterize = (
-  text: string,
-  layout: Layout,
-  invert: boolean,
-) => Uint8Array[];
+export type Rasterize = (text: string, layout: Layout, invert: boolean) => Uint8Array[];
 
 // Exactly one text container captures events on every page (lo-even's rule:
 // none risks the page hearing nothing). It is an invisible one-space box in
@@ -61,10 +57,7 @@ function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
   return true;
 }
 
-export function glassesTransport(
-  bridge: EvenAppBridge,
-  rasterize: Rasterize = defaultRasterize,
-): FrameTransport {
+export function glassesTransport(bridge: EvenAppBridge, rasterize: Rasterize = defaultRasterize): FrameTransport {
   let started = false;
   // What each image container is showing, so a tick that changed one tile's
   // bytes sends one tile: the bytes are the largest write this app makes.
@@ -74,14 +67,8 @@ export function glassesTransport(
     const tiles = rasterize(frame.text, frame.layout, frame.invert === true);
     for (const [index, bytes] of tiles.entries()) {
       if (shown[index] && sameBytes(shown[index], bytes)) continue;
-      const answer = await bridge.updateImageRawData(
-        new ImageRawDataUpdate({ ...imageIdentity(index), imageData: bytes }),
-      );
-      if (
-        !ImageRawDataUpdateResult.isSuccess(
-          ImageRawDataUpdateResult.normalize(answer),
-        )
-      ) {
+      const answer = await bridge.updateImageRawData(new ImageRawDataUpdate({ ...imageIdentity(index), imageData: bytes }));
+      if (!ImageRawDataUpdateResult.isSuccess(ImageRawDataUpdateResult.normalize(answer))) {
         shown = [];
         throw new Error(`Glasses image refused: ${answer}`);
       }
@@ -105,10 +92,7 @@ export function glassesTransport(
         // exists — a hot reload in development, or a WebView reloaded under a
         // page the host kept (sc-even notes the same). A page that exists can
         // be rebuilt; oversize and out-of-memory cannot.
-        if (
-          result !== StartUpPageCreateResult.success &&
-          result !== StartUpPageCreateResult.invalid
-        ) {
+        if (result !== StartUpPageCreateResult.success && result !== StartUpPageCreateResult.invalid) {
           throw new Error(`Glasses startup: ${result}`);
         }
         started = true;
@@ -121,8 +105,7 @@ export function glassesTransport(
           imageObject: images,
         }),
       );
-      if (!ok)
-        throw new Error(`Glasses rebuild refused: ${JSON.stringify(ok)}`);
+      if (!ok) throw new Error(`Glasses rebuild refused: ${JSON.stringify(ok)}`);
       // Image containers are remade empty, so every tile is owed its bytes again.
       shown = [];
       await paintImages(frame);

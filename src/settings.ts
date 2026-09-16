@@ -2,13 +2,7 @@
 // bridge's storage, which outlives the WebView, and mirrored to localStorage
 // for an ordinary browser (the same arrangement as ../simple-ai/sc-even).
 
-export const POSITIONS = [
-  "left-top",
-  "right-top",
-  "left-bottom",
-  "right-bottom",
-  "center",
-] as const;
+export const POSITIONS = ["left-top", "right-top", "left-bottom", "right-bottom", "center"] as const;
 export const SIZES = ["big", "medium", "small", "tiny"] as const;
 export const BLINKS = ["none", "text", "background"] as const;
 export type Position = (typeof POSITIONS)[number];
@@ -37,11 +31,7 @@ export const DEFAULT_SETTINGS: GlassesSettings = {
   blink: "text",
 };
 
-const oneOf = <T extends string>(
-  list: readonly T[],
-  value: unknown,
-  fallback: T,
-): T =>
+const oneOf = <T extends string>(list: readonly T[], value: unknown, fallback: T): T =>
   (list as readonly unknown[]).includes(value) ? (value as T) : fallback;
 
 // Blink used to be a switch; a stored or typed on/off still means something.
@@ -53,15 +43,9 @@ const blinkOf = (value: unknown, fallback: Blink): Blink =>
       : oneOf(BLINKS, value, fallback);
 
 export function parseSettings(raw: unknown): GlassesSettings {
-  const s = (raw && typeof raw === "object" ? raw : {}) as Record<
-    string,
-    unknown
-  >;
+  const s = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   return {
-    milliseconds:
-      typeof s.milliseconds === "boolean"
-        ? s.milliseconds
-        : DEFAULT_SETTINGS.milliseconds,
+    milliseconds: typeof s.milliseconds === "boolean" ? s.milliseconds : DEFAULT_SETTINGS.milliseconds,
     position: oneOf(POSITIONS, s.position, DEFAULT_SETTINGS.position),
     size: oneOf(SIZES, s.size, DEFAULT_SETTINGS.size),
     blink: blinkOf(s.blink, DEFAULT_SETTINGS.blink),
@@ -73,17 +57,12 @@ export function parseSettings(raw: unknown): GlassesSettings {
  * layout can be checked on glasses without tapping through the modal. They
  * hold for this launch and are stored only if the reader saves the modal.
  */
-export function withQueryOverrides(
-  settings: GlassesSettings,
-  search: string,
-): GlassesSettings {
+export function withQueryOverrides(settings: GlassesSettings, search: string): GlassesSettings {
   const params = new URLSearchParams(search);
   const milliseconds = params.get("milliseconds");
   return {
     milliseconds:
-      milliseconds === null
-        ? settings.milliseconds
-        : !["0", "false", "off", "no"].includes(milliseconds.toLowerCase()),
+      milliseconds === null ? settings.milliseconds : !["0", "false", "off", "no"].includes(milliseconds.toLowerCase()),
     position: oneOf(POSITIONS, params.get("position"), settings.position),
     size: oneOf(SIZES, params.get("size"), settings.size),
     blink: blinkOf(params.get("blink"), settings.blink),
@@ -134,9 +113,7 @@ export function readLocalSettings(): GlassesSettings {
   return { ...DEFAULT_SETTINGS };
 }
 
-export async function loadSettings(
-  store: SettingsStore | null,
-): Promise<GlassesSettings> {
+export async function loadSettings(store: SettingsStore | null): Promise<GlassesSettings> {
   if (store) {
     try {
       const raw = await withTimeout(store.get(KEY), STORE_TIMEOUT_MS);
@@ -149,10 +126,7 @@ export async function loadSettings(
   return readLocalSettings();
 }
 
-export async function saveSettings(
-  store: SettingsStore | null,
-  settings: GlassesSettings,
-): Promise<void> {
+export async function saveSettings(store: SettingsStore | null, settings: GlassesSettings): Promise<void> {
   const raw = JSON.stringify(settings);
   try {
     window.localStorage.setItem(KEY, raw);

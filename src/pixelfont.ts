@@ -22,15 +22,7 @@ const GLYPHS: Record<string, string[]> = {
   " ": ["..", "..", "..", "..", "..", "..", ".."],
 };
 // Anything else draws as a box, so a missing glyph is visible rather than silent.
-const FALLBACK = [
-  "#####",
-  "#...#",
-  "#...#",
-  "#...#",
-  "#...#",
-  "#...#",
-  "#####",
-];
+const FALLBACK = ["#####", "#...#", "#...#", "#...#", "#...#", "#...#", "#####"];
 
 export const PIXEL_HEIGHT = ROWS;
 const glyph = (ch: string) => GLYPHS[ch] ?? FALLBACK;
@@ -42,15 +34,7 @@ export function pixelWidth(text: string): number {
 }
 
 /** Draw `text` into a Gray8 buffer `width` × `height`, its top-left dot at (x, top). */
-export function blit(
-  buffer: Uint8Array,
-  width: number,
-  height: number,
-  text: string,
-  x: number,
-  top: number,
-  ink: number,
-): void {
+export function blit(buffer: Uint8Array, width: number, height: number, text: string, x: number, top: number, ink: number): void {
   let cursor = x;
   for (const ch of text) {
     const rows = glyph(ch);
@@ -60,8 +44,7 @@ export function blit(
       const row = rows[r];
       for (let c = 0; c < row.length; c++) {
         const px = cursor + c;
-        if (row[c] === "#" && px >= 0 && px < width)
-          buffer[y * width + px] = ink;
+        if (row[c] === "#" && px >= 0 && px < width) buffer[y * width + px] = ink;
       }
     }
     cursor += rows[0].length + GAP;

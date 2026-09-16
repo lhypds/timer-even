@@ -1,20 +1,10 @@
-import {
-  DeviceConnectType,
-  OsEventTypeList,
-  waitForEvenAppBridge,
-} from "@evenrealities/even_hub_sdk";
+import { DeviceConnectType, OsEventTypeList, waitForEvenAppBridge } from "@evenrealities/even_hub_sdk";
 import { Blinker } from "./blink.ts";
 import { TimerDisplay } from "./display.ts";
 import { eventTypeOf, isTap } from "./events.ts";
 import { glassesTransport } from "./glasses.ts";
 import { layoutFor, type Layout } from "./layout.ts";
-import {
-  isFinished,
-  parseState,
-  templateOf,
-  timeText,
-  type TimerState,
-} from "./protocol.ts";
+import { isFinished, parseState, templateOf, timeText, type TimerState } from "./protocol.ts";
 import { measureText } from "./raster.ts";
 import {
   loadSettings,
@@ -44,22 +34,14 @@ const blinker = new Blinker(BLINK_MS);
 // out. lo-even's number, long enough for the second press to come over BLE.
 const DOUBLE_TAP_MS = 650;
 
-const timerURL = new URL(
-  import.meta.env.VITE_TIMER_URL || "https://timer.gcc3.com/",
-);
-if (!["http:", "https:"].includes(timerURL.protocol))
-  throw new Error("Timer URL must use HTTP(S)");
+const timerURL = new URL(import.meta.env.VITE_TIMER_URL || "https://timer.gcc3.com/");
+if (!["http:", "https:"].includes(timerURL.protocol)) throw new Error("Timer URL must use HTTP(S)");
 // getRandomValues also works on HTTP LAN URLs used by a phone in development.
-const session = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-  byte.toString(16).padStart(2, "0"),
-).join("");
+const session = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) => byte.toString(16).padStart(2, "0")).join("");
 timerURL.searchParams.set("evenSession", session);
 timerURL.searchParams.set("evenParentOrigin", location.origin);
 
-let settings: GlassesSettings = withQueryOverrides(
-  readLocalSettings(),
-  location.search,
-);
+let settings: GlassesSettings = withQueryOverrides(readLocalSettings(), location.search);
 let settingsEdited = false;
 let store: SettingsStore | null = null;
 let state: TimerState | null = null;
@@ -96,10 +78,7 @@ const frame = ui.frame;
 // and the toggle a tap on the glasses turns into. Both carry the session token
 // the website was opened with, and only its origin may receive them.
 function send(type: "request-state" | "toggle") {
-  frame.contentWindow?.postMessage(
-    { source: "gcc3-timer-even", version: 1, type, session },
-    timerURL.origin,
-  );
+  frame.contentWindow?.postMessage({ source: "gcc3-timer-even", version: 1, type, session }, timerURL.origin);
 }
 const requestState = () => send("request-state");
 
@@ -152,11 +131,7 @@ function render() {
   // the glasses silences it (see `tapped`); the next finish blinks again.
   if (!live || !isFinished(live, now)) acknowledged = false;
   const finished = live !== null && !acknowledged && isFinished(live, now);
-  const flash = blinker.phase(
-    now,
-    finished && settings.blink !== "none",
-    display.settled(),
-  );
+  const flash = blinker.phase(now, finished && settings.blink !== "none", display.settled());
   void display.paint({
     layout: layoutOf(text),
     text: flash && settings.blink === "text" ? "" : text,
@@ -165,8 +140,7 @@ function render() {
 }
 
 window.addEventListener("message", (event) => {
-  if (event.source !== frame.contentWindow || event.origin !== timerURL.origin)
-    return;
+  if (event.source !== frame.contentWindow || event.origin !== timerURL.origin) return;
   const next = parseState(event.data, session);
   if (!next || Math.abs(Date.now() - next.sampledAt) > STALE_MS) return;
   // Old news is dropped — unless nothing current has arrived for a while, in
@@ -240,10 +214,7 @@ async function connectGlasses() {
         // the press that began this double tap is not a tap.
         close();
         void bridge.shutDownPageContainer(0).catch(console.error);
-      } else if (
-        type === OsEventTypeList.SYSTEM_EXIT_EVENT ||
-        type === OsEventTypeList.ABNORMAL_EXIT_EVENT
-      ) {
+      } else if (type === OsEventTypeList.SYSTEM_EXIT_EVENT || type === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
         close();
       }
     });

@@ -1,15 +1,7 @@
 // The phone side: a light chrome bar over the timer website, and the glasses
 // settings modal. Styled after ../simple-ai/sc-even's header chips and modal.
 
-import {
-  BLINKS,
-  POSITIONS,
-  SIZES,
-  type Blink,
-  type GlassesSettings,
-  type Position,
-  type Size,
-} from "./settings.ts";
+import { BLINKS, POSITIONS, SIZES, type Blink, type GlassesSettings, type Position, type Size } from "./settings.ts";
 
 const GEAR_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -40,8 +32,7 @@ const BLINK_LABELS: Record<Blink, string> = {
   text: "Blink text",
   background: "Blink background",
 };
-const SWITCH =
-  '<span class="switch__track"><span class="switch__thumb"></span></span>';
+const SWITCH = '<span class="switch__track"><span class="switch__thumb"></span></span>';
 
 export interface UI {
   frame: HTMLIFrameElement;
@@ -68,9 +59,7 @@ document.addEventListener("click", (event) => {
   for (const close of closers) close(event.target as Node);
 });
 
-function createDropdown<T extends string>(
-  items: Array<{ value: T; label: string }>,
-): Dropdown<T> {
+function createDropdown<T extends string>(items: Array<{ value: T; label: string }>): Dropdown<T> {
   const el = document.createElement("div");
   el.className = "select";
   const button = document.createElement("button");
@@ -89,8 +78,7 @@ function createDropdown<T extends string>(
     const item = items.find((i) => i.value === value) ?? items[0];
     current = item.value;
     label.textContent = item.label;
-    for (const [v, li] of options)
-      li.classList.toggle("select__option--active", v === current);
+    for (const [v, li] of options) li.classList.toggle("select__option--active", v === current);
   };
   const close = (outside?: Node) => {
     if (!outside || !el.contains(outside)) el.classList.remove("select--open");
@@ -158,21 +146,14 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
     </div>
   `;
 
-  const q = <T extends Element>(selector: string) =>
-    root.querySelector<T>(selector)!;
+  const q = <T extends Element>(selector: string) => root.querySelector<T>(selector)!;
   const frame = q<HTMLIFrameElement>("[data-frame]");
   const modal = q<HTMLElement>("[data-settings-modal]");
   const milliseconds = q<HTMLInputElement>("[data-milliseconds]");
   const saved = q<HTMLElement>("[data-saved]");
-  const position = createDropdown(
-    POSITIONS.map((value) => ({ value, label: POSITION_LABELS[value] })),
-  );
-  const size = createDropdown(
-    SIZES.map((value) => ({ value, label: SIZE_LABELS[value] })),
-  );
-  const blink = createDropdown(
-    BLINKS.map((value) => ({ value, label: BLINK_LABELS[value] })),
-  );
+  const position = createDropdown(POSITIONS.map((value) => ({ value, label: POSITION_LABELS[value] })));
+  const size = createDropdown(SIZES.map((value) => ({ value, label: SIZE_LABELS[value] })));
+  const blink = createDropdown(BLINKS.map((value) => ({ value, label: BLINK_LABELS[value] })));
   q("[data-position]").appendChild(position.el);
   q("[data-size]").appendChild(size.el);
   q("[data-blink]").appendChild(blink.el);

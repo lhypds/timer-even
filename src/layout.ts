@@ -57,11 +57,7 @@ export const FONT_PX: Record<Size, number> = {
 const DIGIT_HEIGHT = 0.72;
 
 export function alignFor(position: Position): Align {
-  return position === "center"
-    ? "center"
-    : position.startsWith("left")
-      ? "left"
-      : "right";
+  return position === "center" ? "center" : position.startsWith("left") ? "left" : "right";
 }
 
 export function place(width: number, height: number, position: Position): Rect {
@@ -83,10 +79,7 @@ export function place(width: number, height: number, position: Position): Rect {
 function split(total: number, max: number): number[] {
   const count = Math.ceil(total / max);
   const base = Math.floor(total / count);
-  return Array.from(
-    { length: count },
-    (_, i) => base + (i < total - base * count ? 1 : 0),
-  );
+  return Array.from({ length: count }, (_, i) => base + (i < total - base * count ? 1 : 0));
 }
 
 /** The image containers one bitmap is cut into, left to right then top to bottom. */
@@ -115,21 +108,12 @@ export function tilesFor(rect: Rect): Rect[] {
  * lens is four full image containers, more than the link can flip twice a
  * second, and the box is one small one.
  */
-export function layoutFor(
-  settings: GlassesSettings,
-  template: string,
-  measure: (text: string, font: number) => number,
-): Layout {
+export function layoutFor(settings: GlassesSettings, template: string, measure: (text: string, font: number) => number): Layout {
   const align = alignFor(settings.position);
   const pixel = settings.size === "tiny";
   const font = FONT_PX[settings.size];
-  const textWidth = pixel
-    ? pixelWidth(template)
-    : Math.ceil(measure(template, font));
-  const width = Math.min(
-    SCREEN_WIDTH - 2 * MARGIN,
-    Math.max(IMAGE_MIN, textWidth + 4),
-  );
+  const textWidth = pixel ? pixelWidth(template) : Math.ceil(measure(template, font));
+  const width = Math.min(SCREEN_WIDTH - 2 * MARGIN, Math.max(IMAGE_MIN, textWidth + 4));
   const height = Math.max(IMAGE_MIN, Math.min(IMAGE_MAX_HEIGHT, font));
   const rect = place(width, height, settings.position);
   // Digits stand on the baseline; centre their band in the box.
