@@ -17,5 +17,5 @@
       ]
     }
   ],
-  "supported_languages": ["en"]
+  "supported_languages": ["en", "ja", "zh", "fr", "es", "de"]
 }
