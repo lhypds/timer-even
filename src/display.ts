@@ -9,9 +9,13 @@
 // while the app was in the background — so the next attempt goes back through
 // `create`.
 
-import type { Layout } from './layout.ts';
+import type { Layout } from "./layout.ts";
 
-export interface Frame { layout: Layout; text: string; invert?: boolean }
+export interface Frame {
+  layout: Layout;
+  text: string;
+  invert?: boolean;
+}
 
 export interface FrameTransport {
   create(frame: Frame): Promise<void>;
@@ -19,7 +23,8 @@ export interface FrameTransport {
 }
 
 const RETRY_MS = 2000;
-const frameKey = (frame: Frame) => `${frame.layout.key}|${frame.invert ? '!' : ''}${frame.text}`;
+const frameKey = (frame: Frame) =>
+  `${frame.layout.key}|${frame.invert ? "!" : ""}${frame.text}`;
 
 export class TimerDisplay {
   private desired: Frame | null = null;
@@ -42,20 +47,38 @@ export class TimerDisplay {
     this.enabled = true;
   }
 
-  suspend(): void { this.enabled = false; this.generation++; }
+  suspend(): void {
+    this.enabled = false;
+    this.generation++;
+  }
 
   /** Whether the last frame asked for is the one on the glass. */
   settled(): boolean {
-    return !this.busy && this.desired !== null && this.sentKey === frameKey(this.desired);
+    return (
+      !this.busy &&
+      this.desired !== null &&
+      this.sentKey === frameKey(this.desired)
+    );
   }
 
   async paint(frame: Frame, now = Date.now()): Promise<void> {
     this.desired = frame;
-    if (!this.enabled || this.busy || now < this.retryAt || this.sentKey === frameKey(frame)) return;
+    if (
+      !this.enabled ||
+      this.busy ||
+      now < this.retryAt ||
+      this.sentKey === frameKey(frame)
+    )
+      return;
     this.busy = true;
     const generation = this.generation;
     try {
-      while (this.enabled && generation === this.generation && this.desired && this.sentKey !== frameKey(this.desired)) {
+      while (
+        this.enabled &&
+        generation === this.generation &&
+        this.desired &&
+        this.sentKey !== frameKey(this.desired)
+      ) {
         const next = this.desired;
         if (this.builtLayout !== next.layout.key) {
           await this.transport.create(next);
@@ -75,7 +98,10 @@ export class TimerDisplay {
     } catch (error) {
       // A dropped frame is not worth stopping for: the next paint carries the
       // whole frame anyway, and a rebuild puts everything back in step.
-      console.warn('could not paint the glasses:', error instanceof Error ? error.message : String(error));
+      console.warn(
+        "could not paint the glasses:",
+        error instanceof Error ? error.message : String(error),
+      );
       this.sentKey = null;
       this.retryAt = Date.now() + RETRY_MS;
     } finally {

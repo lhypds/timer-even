@@ -1,15 +1,21 @@
 {
   "package_id": "com.gcc3.timer",
   "edition": "202601",
-  "name": "Timer",
+  "name": "timer †",
   "version": "0.1.0",
   "min_app_version": "2.2.9",
   "min_sdk_version": "0.0.14",
   "entrypoint": "index.html",
-  "permissions": [{
-    "name": "network",
-    "desc": "Load timer.gcc3.com and mirror its timer on your glasses.",
-    "whitelist": ["https://timer.gcc3.com", "https://fonts.googleapis.com", "https://fonts.gstatic.com"]
-  }],
+  "permissions": [
+    {
+      "name": "network",
+      "desc": "Load timer.gcc3.com and mirror its timer on your glasses.",
+      "whitelist": [
+        "https://timer.gcc3.com",
+        "https://fonts.googleapis.com",
+        "https://fonts.gstatic.com"
+      ]
+    }
+  ],
   "supported_languages": ["en"]
 }

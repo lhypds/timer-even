@@ -1,7 +1,7 @@
 // The phone side: a light chrome bar over the timer website, and the glasses
 // settings modal. Styled after ../simple-ai/sc-even's header chips and modal.
 
-import { BLINKS, POSITIONS, SIZES, type Blink, type GlassesSettings, type Position, type Size } from './settings.ts';
+import { BLINKS, POSITIONS, SIZES, type Blink, type GlassesSettings, type Position, type Size } from "./settings.ts";
 
 const GEAR_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -15,10 +15,23 @@ const REFRESH_SVG = `
 </svg>`;
 
 const POSITION_LABELS: Record<Position, string> = {
-  'left-top': 'Top left', 'right-top': 'Top right', 'left-bottom': 'Bottom left', 'right-bottom': 'Bottom right', center: 'Center'
+  "left-top": "Top left",
+  "right-top": "Top right",
+  "left-bottom": "Bottom left",
+  "right-bottom": "Bottom right",
+  center: "Center",
 };
-const SIZE_LABELS: Record<Size, string> = { big: 'Big', medium: 'Medium', small: 'Small', tiny: 'Tiny' };
-const BLINK_LABELS: Record<Blink, string> = { none: 'None', text: 'Blink text', background: 'Blink background' };
+const SIZE_LABELS: Record<Size, string> = {
+  big: "Big",
+  medium: "Medium",
+  small: "Small",
+  tiny: "Tiny",
+};
+const BLINK_LABELS: Record<Blink, string> = {
+  none: "None",
+  text: "Blink text",
+  background: "Blink background",
+};
 const SWITCH = '<span class="switch__track"><span class="switch__thumb"></span></span>';
 
 export interface UI {
@@ -42,47 +55,50 @@ interface Dropdown<T extends string> {
 // The webview draws a native <select>'s menu in system style, so the menu is
 // the app's own: a chip showing the value, and a list under it while open.
 const closers: Array<(outside?: Node) => void> = [];
-document.addEventListener('click', event => {
+document.addEventListener("click", (event) => {
   for (const close of closers) close(event.target as Node);
 });
 
 function createDropdown<T extends string>(items: Array<{ value: T; label: string }>): Dropdown<T> {
-  const el = document.createElement('div');
-  el.className = 'select';
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = 'field__input select__button';
-  const label = document.createElement('span');
-  label.className = 'select__label';
+  const el = document.createElement("div");
+  el.className = "select";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "field__input select__button";
+  const label = document.createElement("span");
+  label.className = "select__label";
   button.appendChild(label);
-  const menu = document.createElement('ul');
-  menu.className = 'select__menu';
+  const menu = document.createElement("ul");
+  menu.className = "select__menu";
   el.append(button, menu);
 
   let current = items[0].value;
   const options = new Map<T, HTMLLIElement>();
   const set = (value: T) => {
-    const item = items.find(i => i.value === value) ?? items[0];
+    const item = items.find((i) => i.value === value) ?? items[0];
     current = item.value;
     label.textContent = item.label;
-    for (const [v, li] of options) li.classList.toggle('select__option--active', v === current);
+    for (const [v, li] of options) li.classList.toggle("select__option--active", v === current);
   };
   const close = (outside?: Node) => {
-    if (!outside || !el.contains(outside)) el.classList.remove('select--open');
+    if (!outside || !el.contains(outside)) el.classList.remove("select--open");
   };
   for (const item of items) {
-    const li = document.createElement('li');
-    li.className = 'select__option';
+    const li = document.createElement("li");
+    li.className = "select__option";
     li.textContent = item.label;
-    li.addEventListener('click', () => { set(item.value); close(); });
+    li.addEventListener("click", () => {
+      set(item.value);
+      close();
+    });
     menu.appendChild(li);
     options.set(item.value, li);
   }
-  button.addEventListener('click', event => {
+  button.addEventListener("click", (event) => {
     event.stopPropagation();
-    const open = el.classList.contains('select--open');
+    const open = el.classList.contains("select--open");
     for (const other of closers) other();
-    if (!open) el.classList.add('select--open');
+    if (!open) el.classList.add("select--open");
   });
   closers.push(close);
   set(current);
@@ -99,7 +115,7 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
           <button class="bar-btn" type="button" data-open-settings>${GEAR_SVG}Glasses</button>
         </div>
       </header>
-      <iframe class="frame" data-frame title="Timer" referrerpolicy="no-referrer"></iframe>
+      <iframe class="frame" data-frame title="timer †" referrerpolicy="no-referrer"></iframe>
     </div>
     <div class="modal" data-settings-modal>
       <div class="modal__box">
@@ -125,46 +141,55 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
           <button class="btn" type="button" data-close-settings>Cancel</button>
           <button class="btn btn--primary" type="button" data-save>Save</button>
         </div>
-        <div class="modal__version">Timer ${__APP_VERSION__}</div>
+        <div class="modal__version">timer † ${__APP_VERSION__}</div>
       </div>
     </div>
   `;
 
   const q = <T extends Element>(selector: string) => root.querySelector<T>(selector)!;
-  const frame = q<HTMLIFrameElement>('[data-frame]');
-  const modal = q<HTMLElement>('[data-settings-modal]');
-  const milliseconds = q<HTMLInputElement>('[data-milliseconds]');
-  const saved = q<HTMLElement>('[data-saved]');
-  const position = createDropdown(POSITIONS.map(value => ({ value, label: POSITION_LABELS[value] })));
-  const size = createDropdown(SIZES.map(value => ({ value, label: SIZE_LABELS[value] })));
-  const blink = createDropdown(BLINKS.map(value => ({ value, label: BLINK_LABELS[value] })));
-  q('[data-position]').appendChild(position.el);
-  q('[data-size]').appendChild(size.el);
-  q('[data-blink]').appendChild(blink.el);
+  const frame = q<HTMLIFrameElement>("[data-frame]");
+  const modal = q<HTMLElement>("[data-settings-modal]");
+  const milliseconds = q<HTMLInputElement>("[data-milliseconds]");
+  const saved = q<HTMLElement>("[data-saved]");
+  const position = createDropdown(POSITIONS.map((value) => ({ value, label: POSITION_LABELS[value] })));
+  const size = createDropdown(SIZES.map((value) => ({ value, label: SIZE_LABELS[value] })));
+  const blink = createDropdown(BLINKS.map((value) => ({ value, label: BLINK_LABELS[value] })));
+  q("[data-position]").appendChild(position.el);
+  q("[data-size]").appendChild(size.el);
+  q("[data-blink]").appendChild(blink.el);
 
   const open = () => {
     milliseconds.checked = current.milliseconds;
     position.set(current.position);
     size.set(current.size);
     blink.set(current.blink);
-    saved.classList.remove('modal__saved--show');
-    modal.classList.add('modal--open');
+    saved.classList.remove("modal__saved--show");
+    modal.classList.add("modal--open");
   };
-  const close = () => modal.classList.remove('modal--open');
+  const close = () => modal.classList.remove("modal--open");
 
-  q('[data-reconnect]').addEventListener('click', () => options.onReconnect());
-  q('[data-open-settings]').addEventListener('click', open);
-  q('[data-close-settings]').addEventListener('click', close);
-  modal.addEventListener('click', event => { if (event.target === modal) close(); });
-  q('[data-save]').addEventListener('click', async () => {
-    current = { milliseconds: milliseconds.checked, position: position.get(), size: size.get(), blink: blink.get() };
+  q("[data-reconnect]").addEventListener("click", () => options.onReconnect());
+  q("[data-open-settings]").addEventListener("click", open);
+  q("[data-close-settings]").addEventListener("click", close);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) close();
+  });
+  q("[data-save]").addEventListener("click", async () => {
+    current = {
+      milliseconds: milliseconds.checked,
+      position: position.get(),
+      size: size.get(),
+      blink: blink.get(),
+    };
     await options.onSave(current);
-    saved.classList.add('modal__saved--show');
+    saved.classList.add("modal__saved--show");
     window.setTimeout(close, 600);
   });
 
   return {
     frame,
-    setSettings(settings) { current = settings; }
+    setSettings(settings) {
+      current = settings;
+    },
   };
 }

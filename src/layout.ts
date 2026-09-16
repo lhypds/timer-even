@@ -5,8 +5,8 @@
 // the way lo-even draws its map. The container limits come from
 // ../lo-even/docs/Screen.md.
 
-import { PIXEL_HEIGHT, pixelWidth } from './pixelfont.ts';
-import type { GlassesSettings, Position, Size } from './settings.ts';
+import { PIXEL_HEIGHT, pixelWidth } from "./pixelfont.ts";
+import type { GlassesSettings, Position, Size } from "./settings.ts";
 
 export const SCREEN_WIDTH = 576;
 export const SCREEN_HEIGHT = 288;
@@ -16,8 +16,13 @@ export const IMAGE_MAX_WIDTH = 288;
 export const IMAGE_MAX_HEIGHT = 144;
 export const IMAGE_MIN = 20;
 
-export interface Rect { x: number; y: number; width: number; height: number }
-export type Align = 'left' | 'right' | 'center';
+export interface Rect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+export type Align = "left" | "right" | "center";
 export interface Layout {
   key: string;
   /** The bitmap on the display. */
@@ -43,25 +48,45 @@ export interface Layout {
 // and 0.72 em tall, so the widest string (88:88:88.88) still fits the display
 // at big; small comes out a little under the native face's 15 px digits. Tiny
 // is the pixel face: 7 px digits.
-export const FONT_PX: Record<Size, number> = { big: 84, medium: 40, small: 18, tiny: PIXEL_HEIGHT };
+export const FONT_PX: Record<Size, number> = {
+  big: 84,
+  medium: 40,
+  small: 18,
+  tiny: PIXEL_HEIGHT,
+};
 const DIGIT_HEIGHT = 0.72;
 
 export function alignFor(position: Position): Align {
-  return position === 'center' ? 'center' : position.startsWith('left') ? 'left' : 'right';
+  return position === "center"
+    ? "center"
+    : position.startsWith("left")
+      ? "left"
+      : "right";
 }
 
 export function place(width: number, height: number, position: Position): Rect {
-  const x = position === 'center' ? Math.round((SCREEN_WIDTH - width) / 2)
-    : position.startsWith('left') ? MARGIN : SCREEN_WIDTH - MARGIN - width;
-  const y = position === 'center' ? Math.round((SCREEN_HEIGHT - height) / 2)
-    : position.endsWith('top') ? MARGIN : SCREEN_HEIGHT - MARGIN - height;
+  const x =
+    position === "center"
+      ? Math.round((SCREEN_WIDTH - width) / 2)
+      : position.startsWith("left")
+        ? MARGIN
+        : SCREEN_WIDTH - MARGIN - width;
+  const y =
+    position === "center"
+      ? Math.round((SCREEN_HEIGHT - height) / 2)
+      : position.endsWith("top")
+        ? MARGIN
+        : SCREEN_HEIGHT - MARGIN - height;
   return { x, y, width, height };
 }
 
 function split(total: number, max: number): number[] {
   const count = Math.ceil(total / max);
   const base = Math.floor(total / count);
-  return Array.from({ length: count }, (_, i) => base + (i < total - base * count ? 1 : 0));
+  return Array.from(
+    { length: count },
+    (_, i) => base + (i < total - base * count ? 1 : 0),
+  );
 }
 
 /** The image containers one bitmap is cut into, left to right then top to bottom. */
@@ -91,26 +116,42 @@ export function tilesFor(rect: Rect): Rect[] {
  * second, and the box is one small one.
  */
 export function layoutFor(
-  settings: GlassesSettings, template: string, measure: (text: string, font: number) => number
+  settings: GlassesSettings,
+  template: string,
+  measure: (text: string, font: number) => number,
 ): Layout {
   const align = alignFor(settings.position);
-  const pixel = settings.size === 'tiny';
+  const pixel = settings.size === "tiny";
   const font = FONT_PX[settings.size];
-  const textWidth = pixel ? pixelWidth(template) : Math.ceil(measure(template, font));
-  const width = Math.min(SCREEN_WIDTH - 2 * MARGIN, Math.max(IMAGE_MIN, textWidth + 4));
+  const textWidth = pixel
+    ? pixelWidth(template)
+    : Math.ceil(measure(template, font));
+  const width = Math.min(
+    SCREEN_WIDTH - 2 * MARGIN,
+    Math.max(IMAGE_MIN, textWidth + 4),
+  );
   const height = Math.max(IMAGE_MIN, Math.min(IMAGE_MAX_HEIGHT, font));
   const rect = place(width, height, settings.position);
   // Digits stand on the baseline; centre their band in the box.
   const digitHeight = pixel ? font : DIGIT_HEIGHT * font;
   const baseline = Math.round((height + digitHeight) / 2);
-  const anchor = { x: align === 'left' ? 2 : align === 'right' ? width - 2 : width / 2, baseline };
+  const anchor = {
+    x: align === "left" ? 2 : align === "right" ? width - 2 : width / 2,
+    baseline,
+  };
   const air = Math.max(2, Math.round(digitHeight * 0.15));
   const band = {
     top: Math.max(0, Math.round(baseline - digitHeight) - air),
-    bottom: Math.min(height, baseline + air)
+    bottom: Math.min(height, baseline + air),
   };
   return {
-    key: `${pixel ? 'px' : ''}${font}:${rect.x},${rect.y},${rect.width},${rect.height}:${align}`,
-    rect, tiles: tilesFor(rect), font, pixel, align, anchor, band
+    key: `${pixel ? "px" : ""}${font}:${rect.x},${rect.y},${rect.width},${rect.height}:${align}`,
+    rect,
+    tiles: tilesFor(rect),
+    font,
+    pixel,
+    align,
+    anchor,
+    band,
   };
 }

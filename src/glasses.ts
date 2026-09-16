@@ -1,28 +1,58 @@
 import {
-  CreateStartUpPageContainer, ImageContainerProperty, ImageRawDataUpdate, ImageRawDataUpdateResult,
-  RebuildPageContainer, StartUpPageCreateResult, TextContainerProperty,
-  type EvenAppBridge
-} from '@evenrealities/even_hub_sdk';
-import type { Frame, FrameTransport } from './display.ts';
-import type { Layout } from './layout.ts';
-import { rasterize as defaultRasterize } from './raster.ts';
+  CreateStartUpPageContainer,
+  ImageContainerProperty,
+  ImageRawDataUpdate,
+  ImageRawDataUpdateResult,
+  RebuildPageContainer,
+  StartUpPageCreateResult,
+  TextContainerProperty,
+  type EvenAppBridge,
+} from "@evenrealities/even_hub_sdk";
+import type { Frame, FrameTransport } from "./display.ts";
+import type { Layout } from "./layout.ts";
+import { rasterize as defaultRasterize } from "./raster.ts";
 
-export type Rasterize = (text: string, layout: Layout, invert: boolean) => Uint8Array[];
+export type Rasterize = (
+  text: string,
+  layout: Layout,
+  invert: boolean,
+) => Uint8Array[];
 
 // Exactly one text container captures events on every page (lo-even's rule:
 // none risks the page hearing nothing). It is an invisible one-space box in
 // the corner; the time itself lives in the image containers.
-const captureBox = () => new TextContainerProperty({
-  containerID: 1, containerName: 'timer', xPosition: 0, yPosition: 0, width: 20, height: 29,
-  borderWidth: 0, paddingLength: 0, isEventCapture: 1, zOrderIndex: 0, content: ' '
+const captureBox = () =>
+  new TextContainerProperty({
+    containerID: 1,
+    containerName: "timer",
+    xPosition: 0,
+    yPosition: 0,
+    width: 20,
+    height: 29,
+    borderWidth: 0,
+    paddingLength: 0,
+    isEventCapture: 1,
+    zOrderIndex: 0,
+    content: " ",
+  });
+const imageIdentity = (index: number) => ({
+  containerID: 2 + index,
+  containerName: `timer-img${index + 1}`,
 });
-const imageIdentity = (index: number) => ({ containerID: 2 + index, containerName: `timer-img${index + 1}` });
 
 function imageContainers(layout: Layout): ImageContainerProperty[] {
   // Every container on a page needs its own z-order; the SDK refuses duplicates.
-  return layout.tiles.map((tile, index) => new ImageContainerProperty({
-    ...imageIdentity(index), xPosition: tile.x, yPosition: tile.y, width: tile.width, height: tile.height, zOrderIndex: 1 + index
-  }));
+  return layout.tiles.map(
+    (tile, index) =>
+      new ImageContainerProperty({
+        ...imageIdentity(index),
+        xPosition: tile.x,
+        yPosition: tile.y,
+        width: tile.width,
+        height: tile.height,
+        zOrderIndex: 1 + index,
+      }),
+  );
 }
 
 function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
@@ -31,7 +61,10 @@ function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
   return true;
 }
 
-export function glassesTransport(bridge: EvenAppBridge, rasterize: Rasterize = defaultRasterize): FrameTransport {
+export function glassesTransport(
+  bridge: EvenAppBridge,
+  rasterize: Rasterize = defaultRasterize,
+): FrameTransport {
   let started = false;
   // What each image container is showing, so a tick that changed one tile's
   // bytes sends one tile: the bytes are the largest write this app makes.
@@ -41,8 +74,14 @@ export function glassesTransport(bridge: EvenAppBridge, rasterize: Rasterize = d
     const tiles = rasterize(frame.text, frame.layout, frame.invert === true);
     for (const [index, bytes] of tiles.entries()) {
       if (shown[index] && sameBytes(shown[index], bytes)) continue;
-      const answer = await bridge.updateImageRawData(new ImageRawDataUpdate({ ...imageIdentity(index), imageData: bytes }));
-      if (!ImageRawDataUpdateResult.isSuccess(ImageRawDataUpdateResult.normalize(answer))) {
+      const answer = await bridge.updateImageRawData(
+        new ImageRawDataUpdate({ ...imageIdentity(index), imageData: bytes }),
+      );
+      if (
+        !ImageRawDataUpdateResult.isSuccess(
+          ImageRawDataUpdateResult.normalize(answer),
+        )
+      ) {
         shown = [];
         throw new Error(`Glasses image refused: ${answer}`);
       }
@@ -56,29 +95,40 @@ export function glassesTransport(bridge: EvenAppBridge, rasterize: Rasterize = d
         // The OS wants one text-only start-up page per launch; the bitmap page
         // is then a rebuild (the SDK's documented order, and the one lo-even
         // ships).
-        const result = await bridge.createStartUpPageContainer(new CreateStartUpPageContainer({
-          containerTotalNum: 1, textObject: [captureBox()]
-        }));
+        const result = await bridge.createStartUpPageContainer(
+          new CreateStartUpPageContainer({
+            containerTotalNum: 1,
+            textObject: [captureBox()],
+          }),
+        );
         // `invalid` is also the host's answer when a start-up page already
         // exists — a hot reload in development, or a WebView reloaded under a
         // page the host kept (sc-even notes the same). A page that exists can
         // be rebuilt; oversize and out-of-memory cannot.
-        if (result !== StartUpPageCreateResult.success && result !== StartUpPageCreateResult.invalid) {
+        if (
+          result !== StartUpPageCreateResult.success &&
+          result !== StartUpPageCreateResult.invalid
+        ) {
           throw new Error(`Glasses startup: ${result}`);
         }
         started = true;
       }
       const images = imageContainers(frame.layout);
-      const ok = await bridge.rebuildPageContainer(new RebuildPageContainer({
-        containerTotalNum: 1 + images.length, textObject: [captureBox()], imageObject: images
-      }));
-      if (!ok) throw new Error(`Glasses rebuild refused: ${JSON.stringify(ok)}`);
+      const ok = await bridge.rebuildPageContainer(
+        new RebuildPageContainer({
+          containerTotalNum: 1 + images.length,
+          textObject: [captureBox()],
+          imageObject: images,
+        }),
+      );
+      if (!ok)
+        throw new Error(`Glasses rebuild refused: ${JSON.stringify(ok)}`);
       // Image containers are remade empty, so every tile is owed its bytes again.
       shown = [];
       await paintImages(frame);
     },
     update(frame) {
       return paintImages(frame);
-    }
+    },
   };
 }

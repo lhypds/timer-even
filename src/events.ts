@@ -1,8 +1,16 @@
-import { EventSourceType, OsEventTypeList, type EvenHubEvent } from '@evenrealities/even_hub_sdk';
+import {
+  EventSourceType,
+  OsEventTypeList,
+  type EvenHubEvent,
+} from "@evenrealities/even_hub_sdk";
 
 /** The one type an Even Hub event carries, whichever kind of event it is. */
 export function eventTypeOf(event: EvenHubEvent): OsEventTypeList | undefined {
-  return event.sysEvent?.eventType ?? event.textEvent?.eventType ?? event.listEvent?.eventType;
+  return (
+    event.sysEvent?.eventType ??
+    event.textEvent?.eventType ??
+    event.listEvent?.eventType
+  );
 }
 
 /**
@@ -17,6 +25,7 @@ export function isTap(event: EvenHubEvent): boolean {
   if (type === OsEventTypeList.CLICK_EVENT) return true;
   if (type != null) return false;
   const source = event.sysEvent?.eventSource;
-  if (source != null && source !== EventSourceType.TOUCH_EVENT_FORM_DUMMY_NULL) return true;
+  if (source != null && source !== EventSourceType.TOUCH_EVENT_FORM_DUMMY_NULL)
+    return true;
   return event.textEvent?.containerID != null;
 }

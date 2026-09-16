@@ -1,16 +1,31 @@
-import { DeviceConnectType, OsEventTypeList, waitForEvenAppBridge } from '@evenrealities/even_hub_sdk';
-import { Blinker } from './blink.ts';
-import { TimerDisplay } from './display.ts';
-import { eventTypeOf, isTap } from './events.ts';
-import { glassesTransport } from './glasses.ts';
-import { layoutFor, type Layout } from './layout.ts';
-import { isFinished, parseState, templateOf, timeText, type TimerState } from './protocol.ts';
-import { measureText } from './raster.ts';
 import {
-  loadSettings, readLocalSettings, saveSettings, withQueryOverrides, type GlassesSettings, type SettingsStore
-} from './settings.ts';
-import { createUI } from './ui.ts';
-import './style.css';
+  DeviceConnectType,
+  OsEventTypeList,
+  waitForEvenAppBridge,
+} from "@evenrealities/even_hub_sdk";
+import { Blinker } from "./blink.ts";
+import { TimerDisplay } from "./display.ts";
+import { eventTypeOf, isTap } from "./events.ts";
+import { glassesTransport } from "./glasses.ts";
+import { layoutFor, type Layout } from "./layout.ts";
+import {
+  isFinished,
+  parseState,
+  templateOf,
+  timeText,
+  type TimerState,
+} from "./protocol.ts";
+import { measureText } from "./raster.ts";
+import {
+  loadSettings,
+  readLocalSettings,
+  saveSettings,
+  withQueryOverrides,
+  type GlassesSettings,
+  type SettingsStore,
+} from "./settings.ts";
+import { createUI } from "./ui.ts";
+import "./style.css";
 
 // Fast enough to offer every centisecond; the glasses coalesce to whatever
 // Bluetooth can carry (see display.ts).
@@ -29,14 +44,22 @@ const blinker = new Blinker(BLINK_MS);
 // out. lo-even's number, long enough for the second press to come over BLE.
 const DOUBLE_TAP_MS = 650;
 
-const timerURL = new URL(import.meta.env.VITE_TIMER_URL || 'https://timer.gcc3.com/');
-if (!['http:', 'https:'].includes(timerURL.protocol)) throw new Error('Timer URL must use HTTP(S)');
+const timerURL = new URL(
+  import.meta.env.VITE_TIMER_URL || "https://timer.gcc3.com/",
+);
+if (!["http:", "https:"].includes(timerURL.protocol))
+  throw new Error("Timer URL must use HTTP(S)");
 // getRandomValues also works on HTTP LAN URLs used by a phone in development.
-const session = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('');
-timerURL.searchParams.set('evenSession', session);
-timerURL.searchParams.set('evenParentOrigin', location.origin);
+const session = Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+  byte.toString(16).padStart(2, "0"),
+).join("");
+timerURL.searchParams.set("evenSession", session);
+timerURL.searchParams.set("evenParentOrigin", location.origin);
 
-let settings: GlassesSettings = withQueryOverrides(readLocalSettings(), location.search);
+let settings: GlassesSettings = withQueryOverrides(
+  readLocalSettings(),
+  location.search,
+);
 let settingsEdited = false;
 let store: SettingsStore | null = null;
 let state: TimerState | null = null;
@@ -49,7 +72,7 @@ let closed = false;
 let acknowledged = false;
 let tapTimer = 0;
 
-const ui = createUI(document.querySelector<HTMLElement>('#app')!, {
+const ui = createUI(document.querySelector<HTMLElement>("#app")!, {
   settings,
   onReconnect() {
     display?.reconnect();
@@ -65,17 +88,20 @@ const ui = createUI(document.querySelector<HTMLElement>('#app')!, {
     settingsEdited = true;
     render();
     await saveSettings(store, next);
-  }
+  },
 });
 const frame = ui.frame;
 
 // What the companion says to the website: the handshake that asks for state,
 // and the toggle a tap on the glasses turns into. Both carry the session token
 // the website was opened with, and only its origin may receive them.
-function send(type: 'request-state' | 'toggle') {
-  frame.contentWindow?.postMessage({ source: 'gcc3-timer-even', version: 1, type, session }, timerURL.origin);
+function send(type: "request-state" | "toggle") {
+  frame.contentWindow?.postMessage(
+    { source: "gcc3-timer-even", version: 1, type, session },
+    timerURL.origin,
+  );
 }
-const requestState = () => send('request-state');
+const requestState = () => send("request-state");
 
 /**
  * A tap, once it is clear it was not the first half of a double tap: the
@@ -85,13 +111,16 @@ const requestState = () => send('request-state');
 function tapped() {
   if (!state || Date.now() - receivedAt > STALE_MS) return;
   if (isFinished(state, Date.now())) acknowledged = true;
-  send('toggle');
+  send("toggle");
   render();
 }
 
 function armTap() {
   window.clearTimeout(tapTimer);
-  tapTimer = window.setTimeout(() => { tapTimer = 0; tapped(); }, DOUBLE_TAP_MS);
+  tapTimer = window.setTimeout(() => {
+    tapTimer = 0;
+    tapped();
+  }, DOUBLE_TAP_MS);
 }
 
 function disarmTap() {
@@ -102,7 +131,7 @@ function disarmTap() {
 // The layout is sized for the widest string of the current shape, so it only
 // changes when the settings do or the text grows an hour or loses its tail.
 let layout: Layout | null = null;
-let layoutKey = '';
+let layoutKey = "";
 function layoutOf(text: string): Layout {
   const template = templateOf(text);
   const key = `${template}|${JSON.stringify(settings)}`;
@@ -117,22 +146,27 @@ function render() {
   if (closed || !display) return;
   const now = Date.now();
   const live = state && now - receivedAt <= STALE_MS ? state : null;
-  const text = live ? timeText(live, now, settings.milliseconds) : '--:--';
+  const text = live ? timeText(live, now, settings.milliseconds) : "--:--";
   // A finished countdown flashes at the phone's own rate: the digits go out,
   // or the box behind them lights up with the digits cut out of it. A tap on
   // the glasses silences it (see `tapped`); the next finish blinks again.
   if (!live || !isFinished(live, now)) acknowledged = false;
   const finished = live !== null && !acknowledged && isFinished(live, now);
-  const flash = blinker.phase(now, finished && settings.blink !== 'none', display.settled());
+  const flash = blinker.phase(
+    now,
+    finished && settings.blink !== "none",
+    display.settled(),
+  );
   void display.paint({
     layout: layoutOf(text),
-    text: flash && settings.blink === 'text' ? '' : text,
-    invert: flash && settings.blink === 'background'
+    text: flash && settings.blink === "text" ? "" : text,
+    invert: flash && settings.blink === "background",
   });
 }
 
-window.addEventListener('message', event => {
-  if (event.source !== frame.contentWindow || event.origin !== timerURL.origin) return;
+window.addEventListener("message", (event) => {
+  if (event.source !== frame.contentWindow || event.origin !== timerURL.origin)
+    return;
   const next = parseState(event.data, session);
   if (!next || Math.abs(Date.now() - next.sampledAt) > STALE_MS) return;
   // Old news is dropped — unless nothing current has arrived for a while, in
@@ -144,7 +178,7 @@ window.addEventListener('message', event => {
   render();
 });
 
-frame.addEventListener('load', () => {
+frame.addEventListener("load", () => {
   // A child reload restarts its sequence; the new page must answer the handshake.
   sequence = -1;
   state = null;
@@ -155,25 +189,35 @@ frame.src = timerURL.href;
 
 const tick = window.setInterval(render, TICK_MS);
 const heartbeat = window.setInterval(requestState, HEARTBEAT_MS);
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) { requestState(); display?.reconnect(); render(); }
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) {
+    requestState();
+    display?.reconnect();
+    render();
+  }
 });
-window.addEventListener('pageshow', () => { requestState(); render(); });
+window.addEventListener("pageshow", () => {
+  requestState();
+  render();
+});
 
 async function connectGlasses() {
   try {
     const bridge = await waitForEvenAppBridge();
-    store = { get: key => bridge.getLocalStorage(key), set: (key, value) => bridge.setLocalStorage(key, value) };
+    store = {
+      get: (key) => bridge.getLocalStorage(key),
+      set: (key, value) => bridge.setLocalStorage(key, value),
+    };
     // The host's copy outlives the WebView, so it wins over the local mirror —
     // unless the reader has already changed something this launch.
-    void loadSettings(store).then(loaded => {
+    void loadSettings(store).then((loaded) => {
       if (settingsEdited) return;
       settings = withQueryOverrides(loaded, location.search);
       ui.setSettings(settings);
       render();
     });
     display = new TimerDisplay(glassesTransport(bridge));
-    const unsubscribeDevice = bridge.onDeviceStatusChanged(device => {
+    const unsubscribeDevice = bridge.onDeviceStatusChanged((device) => {
       if (device.connectType === DeviceConnectType.Connected) {
         display?.reconnect();
         requestState();
@@ -181,12 +225,14 @@ async function connectGlasses() {
       // Device status may also belong to a ring. A failed display write is the
       // authoritative signal that the glasses cannot be reached.
     });
-    const unsubscribeEvents = bridge.onEvenHubEvent(event => {
+    const unsubscribeEvents = bridge.onEvenHubEvent((event) => {
       const type = eventTypeOf(event);
       if (isTap(event)) {
         armTap();
       } else if (type === OsEventTypeList.FOREGROUND_ENTER_EVENT) {
-        display?.reconnect(); requestState(); render();
+        display?.reconnect();
+        requestState();
+        render();
       } else if (type === OsEventTypeList.FOREGROUND_EXIT_EVENT) {
         display?.suspend();
       } else if (type === OsEventTypeList.DOUBLE_CLICK_EVENT) {
@@ -194,7 +240,10 @@ async function connectGlasses() {
         // the press that began this double tap is not a tap.
         close();
         void bridge.shutDownPageContainer(0).catch(console.error);
-      } else if (type === OsEventTypeList.SYSTEM_EXIT_EVENT || type === OsEventTypeList.ABNORMAL_EXIT_EVENT) {
+      } else if (
+        type === OsEventTypeList.SYSTEM_EXIT_EVENT ||
+        type === OsEventTypeList.ABNORMAL_EXIT_EVENT
+      ) {
         close();
       }
     });
@@ -210,7 +259,7 @@ async function connectGlasses() {
     render();
   } catch (error) {
     // An ordinary browser: the website in the frame still works on its own.
-    console.info('Even bridge unavailable', error);
+    console.info("Even bridge unavailable", error);
   }
 }
 
