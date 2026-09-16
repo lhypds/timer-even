@@ -1,0 +1,331 @@
+/* The chrome around the timer website — the header chips, the settings modal —
+   follows ../simple-ai/sc-even: one light field, white controls, no outlines,
+   8 px corners, the platform's own UI face. */
+:root {
+  --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --chrome: rgb(238 238 238);
+  --chrome-ink: #000000; /* text and filled controls on the chrome */
+  --chrome-muted: #6b7280; /* labels, hints, the status line */
+  --chrome-field: #ffffff; /* input and button fills */
+  --chrome-track: #cccccc; /* the switch's off state */
+}
+
+* {
+  box-sizing: border-box;
+  border-radius: 0; /* square by default; rules that want a curve say so (radius-ok) */
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+input {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+button,
+input:not([type="checkbox"]) {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-x pan-y;
+}
+
+body {
+  margin: 0;
+  font: 14px/1.5 var(--font-ui);
+  background: var(--chrome);
+  color: var(--chrome-ink);
+}
+
+.app {
+  max-width: 720px;
+  margin: 0 auto;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 4px 12px;
+  background: var(--chrome);
+  color: var(--chrome-ink);
+}
+
+.app__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Text chips on the light bar: white, no outline, softly rounded. */
+.bar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px; /* radius-ok */
+  background: var(--chrome-field);
+  color: inherit;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.bar-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* The website, inset into the chrome like sc-even's terminal box. The bottom
+   margin clears the home indicator; env() is 0 where there is none. */
+.frame {
+  flex: 1;
+  min-height: 0;
+  width: calc(100% - 24px);
+  margin: 4px 12px;
+  margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  border: none;
+  border-radius: 8px; /* radius-ok */
+  background: #ffffff;
+  display: block;
+}
+
+/* ---- the settings modal ---- */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent; /* no scrim: the layer only catches taps outside the box */
+  color: var(--chrome-ink);
+  padding: 20px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.modal--open {
+  display: flex;
+  touch-action: none;
+  overscroll-behavior: none;
+}
+
+.modal__box {
+  width: 100%;
+  max-width: 340px;
+  background: var(--chrome);
+  border: none;
+  border-radius: 8px; /* radius-ok */
+  padding: 16px 16px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.modal__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.field {
+  display: block;
+}
+
+.field__label {
+  display: block;
+  color: var(--chrome-ink);
+  margin-bottom: 4px;
+}
+
+.switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  height: 36px;
+  color: var(--chrome-ink);
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch__track {
+  flex-shrink: 0;
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px; /* radius-ok — a full pill */
+  background: var(--chrome-track);
+  transition: background 0.2s;
+}
+
+.switch input:checked + .switch__track {
+  background: var(--chrome-ink);
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%; /* radius-ok */
+  background: var(--chrome-field);
+  transition: transform 0.2s;
+}
+
+.switch input:checked + .switch__track .switch__thumb {
+  transform: translateX(16px);
+}
+
+.field__input {
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 8px; /* radius-ok */
+  background: var(--chrome-field);
+  color: var(--chrome-ink);
+}
+
+.field__input:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--chrome-ink);
+}
+
+/* The app's own dropdown, in place of the webview's system-styled <select>. */
+.select {
+  position: relative;
+}
+
+.select__button {
+  display: flex;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%236b7280' stroke-width='1.5'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.select__label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select--open .select__button {
+  box-shadow: none;
+}
+
+.select__menu {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 4px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  z-index: 10;
+  background: var(--chrome-field);
+  border: none;
+  border-radius: 8px; /* radius-ok */
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  display: none;
+}
+
+.select--open .select__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.select__option {
+  padding: 6px 10px;
+  border-radius: 8px; /* radius-ok */
+  color: var(--chrome-ink);
+  cursor: pointer;
+}
+
+.select__option:hover,
+.select__option--active {
+  background: var(--chrome);
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.modal__actions .btn {
+  min-width: 72px;
+  height: 32px;
+  text-align: center;
+}
+
+.btn {
+  padding: 6px 12px;
+  border-radius: 8px; /* radius-ok */
+  border: none;
+  background: var(--chrome-field);
+  color: var(--chrome-ink);
+  cursor: pointer;
+}
+
+.btn--primary {
+  background: var(--chrome-ink);
+  color: var(--chrome-field);
+  font-weight: 600;
+}
+
+.modal__saved {
+  color: var(--chrome-ink);
+  margin-right: auto;
+  align-self: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.modal__saved--show {
+  opacity: 1;
+}
+
+.modal__version {
+  margin-top: 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--chrome-ink);
+}
+
+[hidden] {
+  display: none !important;
+}

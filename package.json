@@ -1,0 +1,17 @@
+{
+  "name": "timer-even",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.18" },
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "even:pack": "bash ./package.sh",
+    "simulate": "evenhub-simulator http://localhost:5173"
+  },
+  "dependencies": { "@evenrealities/even_hub_sdk": "0.0.14" },
+  "devDependencies": { "typescript": "~6.0.2", "vite": "^8.0.13" }
+}
