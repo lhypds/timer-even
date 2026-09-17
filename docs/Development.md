@@ -29,7 +29,7 @@ Build and release
 ./package.sh
 ```
 
-This produces `com.gcc3.timer-0.1.0.ehpk` for Even Hub. `package.sh` refuses to run while `VITE_TIMER_URL` points at a local server, and requires `app.json` and `package.json` to carry the same version. `npm test` also exercises the integration files in sibling `../timer`; use `TIMER_PROJECT_DIR` to point to another checkout.
+This produces `com.gcc3.timer-0.1.0.ehpk` for Even Hub. `package.sh` refuses to run while `VITE_TIMER_URL` points at a local server, and requires `app.json` and `package.json` to carry the same version. Bump both at once with `npm version patch` (or `minor`, `major`): it updates `package.json` and `package-lock.json`, copies the version into `app.json`, and commits the three files as `x.y.z` with a `vx.y.z` tag. `npm test` also exercises the integration files in sibling `../timer`; use `TIMER_PROJECT_DIR` to point to another checkout.
 
 1. Build the changed `../timer` and deploy its `dist/` to the **existing** timer.gcc3.com host.
 2. Keep embedding permitted: no `X-Frame-Options: DENY/SAMEORIGIN`, and any CSP `frame-ancestors` must allow the Even host. The current website sends neither header.

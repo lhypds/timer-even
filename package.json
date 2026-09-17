@@ -11,6 +11,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "version": "node -e \"const fs = require('fs'); const app = JSON.parse(fs.readFileSync('app.json', 'utf8')); app.version = require('./package.json').version; fs.writeFileSync('app.json', JSON.stringify(app, null, 2) + '\\n')\" && prettier --write app.json && git add app.json",
     "even:pack": "bash ./package.sh",
     "simulate": "evenhub-simulator http://localhost:5173"
   },
