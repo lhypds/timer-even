@@ -20,7 +20,7 @@ PKG_VERSION="$(node -p "require('./package.json').version" 2>/dev/null || echo 0
 OUTPUT="${PACKAGE_ID}-${VERSION}.ehpk"
 
 if [ "$VERSION" != "$PKG_VERSION" ]; then
-  echo "    app.json version ($VERSION) and package.json version ($PKG_VERSION) differ. Bump with: npm version <patch|minor|major>" >&2
+  echo "    app.json version ($VERSION) and package.json version ($PKG_VERSION) differ. Bump with: ./bump.sh" >&2
   exit 1
 fi
 

@@ -22,7 +22,7 @@ else
 fi
 
 echo "==> Making helper scripts executable"
-chmod +x setup.sh develop.sh simulate.sh login.sh package.sh 2>/dev/null || true
+chmod +x setup.sh develop.sh simulate.sh login.sh package.sh bump.sh 2>/dev/null || true
 
 echo "==> Checking evenhub CLI (used by develop.sh and package.sh)"
 if command -v evenhub >/dev/null 2>&1; then
