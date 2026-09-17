@@ -157,6 +157,18 @@ body {
   margin-bottom: 4px;
 }
 
+/* A label with the field's value read out at its far end. */
+.field__label--row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.field__value {
+  font-variant-numeric: tabular-nums;
+}
+
 .switch {
   display: flex;
   align-items: center;
@@ -330,6 +342,74 @@ body {
 
 .grid__cell:focus-visible {
   outline: none;
+  box-shadow: inset 0 0 0 2px var(--chrome-ink);
+}
+
+/* The scroll sensitivity slider: a thin track inked up to the centre of a
+   white thumb, whose centre travels from half a thumb in at one end to half a
+   thumb in at the other (--ratio, 0 to 1). */
+.slider {
+  --thumb: 20px;
+  --ratio: 0;
+  padding: 4px 0;
+}
+
+.slider__input {
+  display: block;
+  width: 100%;
+  height: var(--thumb);
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider__input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px; /* radius-ok — a full pill */
+  background:
+    linear-gradient(var(--chrome-ink), var(--chrome-ink)) 0 / calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--ratio)) 100%
+      no-repeat,
+    var(--chrome-track);
+}
+
+.slider__input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: -8px; /* centred on the 4 px track */
+  border: none;
+  border-radius: 50%; /* radius-ok */
+  background: var(--chrome-field);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24);
+}
+
+.slider__input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px; /* radius-ok — a full pill */
+  background: var(--chrome-track);
+}
+
+.slider__input::-moz-range-progress {
+  height: 4px;
+  border-radius: 2px; /* radius-ok — a full pill */
+  background: var(--chrome-ink);
+}
+
+.slider__input::-moz-range-thumb {
+  width: var(--thumb);
+  height: var(--thumb);
+  border: none;
+  border-radius: 50%; /* radius-ok */
+  background: var(--chrome-field);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.24);
+}
+
+.slider__input:focus-visible {
+  outline: none;
+}
+
+.slider__input:focus-visible::-webkit-slider-thumb {
   box-shadow: inset 0 0 0 2px var(--chrome-ink);
 }
 

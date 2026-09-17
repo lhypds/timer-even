@@ -1,7 +1,7 @@
 import { DeviceConnectType, OsEventTypeList, waitForEvenAppBridge } from "@evenrealities/even_hub_sdk";
 import { Blinker } from "./blink.ts";
 import { TimerDisplay } from "./display.ts";
-import { eventTypeOf, isTap } from "./events.ts";
+import { eventTypeOf, isTap, scrollOf } from "./events.ts";
 import { glassesTransport } from "./glasses.ts";
 import { layoutFor, type Layout } from "./layout.ts";
 import { isFinished, parseState, templateOf, timeText, type TimerState } from "./protocol.ts";
@@ -75,12 +75,14 @@ const ui = createUI(document.querySelector<HTMLElement>("#app")!, {
 const frame = ui.frame;
 
 // What the companion says to the website: the handshake that asks for state,
-// and the toggle a tap on the glasses turns into. Both carry the session token
-// the website was opened with, and only its origin may receive them.
-function send(type: "request-state" | "toggle") {
-  frame.contentWindow?.postMessage({ source: "gcc3-timer-even", version: 1, type, session }, timerURL.origin);
+// the toggle a tap on the glasses turns into, and the adjustment scrolling does.
+// All carry the session token the website was opened with, and only its origin
+// may receive them.
+type Message = { type: "request-state" } | { type: "toggle" } | { type: "adjust"; seconds: number };
+function send(message: Message) {
+  frame.contentWindow?.postMessage({ source: "gcc3-timer-even", version: 1, ...message, session }, timerURL.origin);
 }
-const requestState = () => send("request-state");
+const requestState = () => send({ type: "request-state" });
 
 /**
  * A tap, once it is clear it was not the first half of a double tap: the
@@ -90,8 +92,20 @@ const requestState = () => send("request-state");
 function tapped() {
   if (!state || Date.now() - receivedAt > STALE_MS) return;
   if (isFinished(state, Date.now())) acknowledged = true;
-  send("toggle");
+  send({ type: "toggle" });
   render();
+}
+
+/**
+ * A step of scrolling: up adds time and down takes it away, running or
+ * stopped, each step by the scroll sensitivity's seconds, so the more the
+ * scrolling the more the change. The website applies it like its adjust
+ * buttons, which stop at zero, and the new time comes back as state, so
+ * nothing is drawn here.
+ */
+function scrolled(direction: 1 | -1) {
+  if (!state || Date.now() - receivedAt > STALE_MS) return;
+  send({ type: "adjust", seconds: direction * settings.scrollSeconds });
 }
 
 function armTap() {
@@ -201,8 +215,11 @@ async function connectGlasses() {
     });
     const unsubscribeEvents = bridge.onEvenHubEvent((event) => {
       const type = eventTypeOf(event);
+      const scroll = scrollOf(event);
       if (isTap(event)) {
         armTap();
+      } else if (scroll) {
+        scrolled(scroll);
       } else if (type === OsEventTypeList.FOREGROUND_ENTER_EVENT) {
         display?.reconnect();
         requestState();

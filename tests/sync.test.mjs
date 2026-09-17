@@ -5,10 +5,17 @@ import { pathToFileURL } from "node:url";
 import { isFinished, parseState, secondsAt, templateOf, timeText } from "../src/protocol.ts";
 import { TimerDisplay } from "../src/display.ts";
 import { FONT_PX, IMAGE_MAX_HEIGHT, IMAGE_MAX_WIDTH, IMAGE_MIN, MARGIN, layoutFor } from "../src/layout.ts";
-import { DEFAULT_SETTINGS, POSITIONS, parseSettings, withQueryOverrides } from "../src/settings.ts";
+import {
+  DEFAULT_SETTINGS,
+  POSITIONS,
+  SCROLL_SECONDS_MAX,
+  SCROLL_SECONDS_MIN,
+  parseSettings,
+  withQueryOverrides,
+} from "../src/settings.ts";
 import { glassesTransport } from "../src/glasses.ts";
 import { PIXEL_HEIGHT, pixelWidth } from "../src/pixelfont.ts";
-import { isTap } from "../src/events.ts";
+import { isTap, scrollOf } from "../src/events.ts";
 import { Blinker } from "../src/blink.ts";
 import { rasterize } from "../src/raster.ts";
 
@@ -105,6 +112,7 @@ test("settings fall back field by field", () => {
     position: "left-top",
     size: "tiny",
     blink: "text",
+    scrollSeconds: 15,
   });
   assert.deepEqual(parseSettings(null), DEFAULT_SETTINGS);
   assert.deepEqual(parseSettings("x"), DEFAULT_SETTINGS);
@@ -114,12 +122,14 @@ test("settings fall back field by field", () => {
       position: "right-top",
       blink: "yes",
       milliseconds: true,
+      scrollSeconds: 61,
     }),
     {
       milliseconds: true,
       position: "right-top",
       size: DEFAULT_SETTINGS.size,
       blink: "text",
+      scrollSeconds: DEFAULT_SETTINGS.scrollSeconds,
     },
   );
   assert.deepEqual(
@@ -128,16 +138,29 @@ test("settings fall back field by field", () => {
       position: "center",
       blink: "background",
       milliseconds: true,
+      scrollSeconds: 7,
     }),
     {
       milliseconds: true,
       position: "center",
       size: "tiny",
       blink: "background",
+      scrollSeconds: 7,
     },
   );
   assert.equal(parseSettings({ blink: true }).blink, "text", "the old switch, on");
   assert.equal(parseSettings({ blink: false }).blink, "none", "the old switch, off");
+  assert.equal(parseSettings({ milliseconds: true }).scrollSeconds, 15, "saved before there was a slider");
+});
+
+test("the scroll sensitivity is any whole second from 1 to 60, and nothing else", () => {
+  assert.equal(SCROLL_SECONDS_MIN, 1);
+  assert.equal(SCROLL_SECONDS_MAX, 60);
+  for (const good of [1, 2, 15, 59, 60]) assert.equal(parseSettings({ scrollSeconds: good }).scrollSeconds, good);
+  assert.equal(parseSettings({ scrollSeconds: "20" }).scrollSeconds, 20, "a number written as text is still that number");
+  for (const bad of [0, -5, 61, 2.5, NaN, "2.5", "", null, true]) {
+    assert.equal(parseSettings({ scrollSeconds: bad }).scrollSeconds, 15, `stored ${String(bad)}`);
+  }
 });
 
 test("URL overrides hold for one launch and ignore junk", () => {
@@ -146,16 +169,19 @@ test("URL overrides hold for one launch and ignore junk", () => {
     position: "left-top",
     size: "big",
     blink: "none",
+    scrollSeconds: 10,
   };
   assert.deepEqual(withQueryOverrides(saved, ""), saved);
-  assert.deepEqual(withQueryOverrides(saved, "?size=tiny&position=center&milliseconds=1&blink=background"), {
+  assert.deepEqual(withQueryOverrides(saved, "?size=tiny&position=center&milliseconds=1&blink=background&scrollSeconds=23"), {
     milliseconds: true,
     position: "center",
     size: "tiny",
     blink: "background",
+    scrollSeconds: 23,
   });
   assert.equal(withQueryOverrides(saved, "?blink=on").blink, "text");
-  assert.deepEqual(withQueryOverrides(saved, "?size=huge&position=nowhere&blink=maybe"), saved);
+  assert.deepEqual(withQueryOverrides(saved, "?size=huge&position=nowhere&blink=maybe&scrollSeconds=0"), saved);
+  for (const junk of ["", "61", "1.5", "abc"]) assert.deepEqual(withQueryOverrides(saved, `?scrollSeconds=${junk}`), saved);
 });
 
 test("sizes step down below the native face and every bitmap fits the display", () => {
@@ -314,6 +340,7 @@ function senderHarness(origin = "https://app.example") {
     },
     request: (overrides = {}) => say(request, overrides),
     toggle: (overrides = {}) => say({ ...request, type: "toggle" }, overrides),
+    adjust: (seconds, overrides = {}) => say({ ...request, type: "adjust", seconds }, overrides),
   };
 }
 
@@ -368,8 +395,34 @@ test("a toggle from the glasses is honoured only from the connected companion", 
   });
   assert.deepEqual(h.commands, [], "nor from anyone else, nor for a command that does not exist");
   h.toggle();
-  assert.deepEqual(h.commands, ["toggle"]);
+  assert.deepEqual(h.commands, [{ type: "toggle" }]);
   assert.equal(h.sent.length, 1, "a command is not a state request");
+});
+
+test("a scroll's adjustment is honoured only from the connected companion, in whole seconds", () => {
+  const h = senderHarness();
+  h.adjust(60);
+  assert.deepEqual(h.commands, [], "not before the handshake");
+  h.request();
+  h.adjust(60, { origin: "https://untrusted.example" });
+  h.adjust(60, { source: {} });
+  for (const bad of [undefined, null, "60", 1.5, NaN, Infinity, 2 ** 53]) h.adjust(bad);
+  assert.deepEqual(h.commands, [], "nor from anyone else, nor for a time that is not whole seconds");
+  h.adjust(60);
+  h.adjust(-60);
+  assert.deepEqual(h.commands, [
+    { type: "adjust", seconds: 60 },
+    { type: "adjust", seconds: -60 },
+  ]);
+  assert.equal(h.sent.length, 1, "a command is not a state request");
+});
+
+test("a scroll up is 1, a scroll down is -1, and nothing else is a scroll", () => {
+  assert.equal(scrollOf({ textEvent: { containerID: 1, eventType: 1 } }), 1, "scroll to the top");
+  assert.equal(scrollOf({ sysEvent: { eventType: 2, eventSource: 1 } }), -1, "scroll to the bottom");
+  assert.equal(scrollOf({ sysEvent: { eventSource: 1 } }), 0, "a tap");
+  assert.equal(scrollOf({ textEvent: { containerID: 1, eventType: 3 } }), 0, "a double tap");
+  assert.equal(scrollOf({}), 0);
 });
 
 test("a tap is a click event, or the typeless press the host sends for one", () => {
@@ -546,6 +599,8 @@ test("a changed layout rebuilds the page once; blank and inverted frames are wri
   ]);
 });
 
+const textBox = (t) => [t.containerID, t.isEventCapture, t.content, t.xPosition, t.yPosition, t.width, t.height, t.borderWidth];
+
 function fakeBridge(startResults = [0]) {
   const calls = [];
   let refuse = false;
@@ -555,14 +610,14 @@ function fakeBridge(startResults = [0]) {
       refuse = value;
     },
     async createStartUpPageContainer(page) {
-      calls.push(["start", page.containerTotalNum, page.textObject.map((t) => [t.containerID, t.isEventCapture, t.content])]);
+      calls.push(["start", page.containerTotalNum, page.textObject.map(textBox)]);
       return startResults.length > 1 ? startResults.shift() : startResults[0];
     },
     async rebuildPageContainer(page) {
       calls.push([
         "rebuild",
         page.containerTotalNum,
-        page.textObject[0].content,
+        page.textObject.map(textBox),
         page.imageObject.map((i) => [i.containerID, i.width, i.height, i.zOrderIndex]),
       ]);
       return true;
@@ -574,7 +629,9 @@ function fakeBridge(startResults = [0]) {
   };
 }
 
-const CAPTURE = [[1, 1, " "]];
+// One space across the whole display: nothing to draw, and nothing that could
+// overflow the box and grow a scroll bar.
+const CAPTURE = [[1, 1, " ", 0, 0, 576, 288, 0]];
 
 test("a refused start-up page is retried; every build after it is a rebuild", async () => {
   const bridge = fakeBridge([3, 0]); // outOfMemory, then success
@@ -586,10 +643,10 @@ test("a refused start-up page is retried; every build after it is a rebuild", as
   assert.deepEqual(bridge.calls, [
     ["start", 1, CAPTURE],
     ["start", 1, CAPTURE],
-    ["rebuild", 2, " ", [[2, TINY.rect.width, TINY.rect.height, 1]]],
+    ["rebuild", 2, CAPTURE, [[2, TINY.rect.width, TINY.rect.height, 1]]],
     ["image", 2, [48, 0]],
     ["image", 2, [49, 0]],
-    ["rebuild", 3, " ", BIG.tiles.map((t, i) => [2 + i, t.width, t.height, 1 + i])],
+    ["rebuild", 3, CAPTURE, BIG.tiles.map((t, i) => [2 + i, t.width, t.height, 1 + i])],
     ["image", 2, [48, 0]],
     ["image", 3, [52, 1]],
   ]);

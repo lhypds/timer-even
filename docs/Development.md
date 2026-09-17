@@ -19,7 +19,7 @@ The helper scripts mirror `../lo-even`:
 
 Production embeds `https://timer.gcc3.com/`. In development, `develop.sh` embeds the `../timer` dev server on this machine instead: run its normal `pnpm dev` command (port 3300) first, then `./develop.sh` here. It rewrites `localhost` to your LAN address so a phone can reach both servers, and prints the address it will embed. Set `VITE_TIMER_URL` to embed something else; embedding the deployed site only makes sense once the changed `../timer` is deployed there, since the old site cannot talk to the glasses and they show `--:--`. Scan the QR code with Even Hub's development flow on the phone; a packaged app's network whitelist is production-only.
 
-To check one layout without tapping through the modal, add query overrides to the URL, for example `?size=tiny&position=center&milliseconds=0&blink=background`. They hold for that launch and are stored only if you save the modal.
+To check one layout without tapping through the modal, add query overrides to the URL, for example `?size=tiny&position=center&milliseconds=0&blink=background&scrollSeconds=20`. They hold for that launch and are stored only if you save the modal.
 
 Build and release
 -----------------

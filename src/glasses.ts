@@ -9,22 +9,25 @@ import {
   type EvenAppBridge,
 } from "@evenrealities/even_hub_sdk";
 import type { Frame, FrameTransport } from "./display.ts";
-import type { Layout } from "./layout.ts";
+import { SCREEN_HEIGHT, SCREEN_WIDTH, type Layout } from "./layout.ts";
 import { rasterize as defaultRasterize } from "./raster.ts";
 
 export type Rasterize = (text: string, layout: Layout, invert: boolean) => Uint8Array[];
 
 // Exactly one text container captures events on every page (lo-even's rule:
-// none risks the page hearing nothing). It is an invisible one-space box in
-// the corner; the time itself lives in the image containers.
+// none risks the page hearing nothing). It holds one space and no border, so
+// it draws nothing; the time itself lives in the image containers above it. It
+// covers the whole display because a text container whose content does not fit
+// grows a scroll bar: a 20 × 29 box, one line tall in the simulator, showed one
+// on glass. A space never fills the screen.
 const captureBox = () =>
   new TextContainerProperty({
     containerID: 1,
     containerName: "timer",
     xPosition: 0,
     yPosition: 0,
-    width: 20,
-    height: 29,
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
     borderWidth: 0,
     paddingLength: 0,
     isEventCapture: 1,

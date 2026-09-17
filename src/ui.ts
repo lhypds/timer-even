@@ -1,7 +1,17 @@
 // The phone side: a light chrome bar over the timer website, and the glasses
 // settings modal. Styled after ../simple-ai/sc-even's header chips and modal.
 
-import { BLINKS, POSITIONS, SIZES, type Blink, type GlassesSettings, type Position, type Size } from "./settings.ts";
+import {
+  BLINKS,
+  POSITIONS,
+  SCROLL_SECONDS_MAX,
+  SCROLL_SECONDS_MIN,
+  SIZES,
+  type Blink,
+  type GlassesSettings,
+  type Position,
+  type Size,
+} from "./settings.ts";
 
 const GEAR_SVG = `
 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
@@ -50,7 +60,7 @@ export interface UIOptions {
   onSave(settings: GlassesSettings): void | Promise<void>;
 }
 
-interface Control<T extends string> {
+interface Control<T> {
   el: HTMLElement;
   get(): T;
   set(value: T): void;
@@ -141,6 +151,40 @@ function createPositionGrid(): Control<Position> {
   return { el, get: () => current, set };
 }
 
+// A slider over every whole number from `min` to `max`, with its value read
+// out in `output`, which is placed beside the field's label.
+function createSlider(
+  name: string,
+  min: number,
+  max: number,
+  format: (value: number) => string,
+): Control<number> & { output: HTMLElement } {
+  const el = document.createElement("div");
+  el.className = "slider";
+  const input = document.createElement("input");
+  input.type = "range";
+  input.className = "slider__input";
+  input.min = String(min);
+  input.max = String(max);
+  input.step = "1";
+  input.setAttribute("aria-label", name);
+  el.appendChild(input);
+  const output = document.createElement("span");
+  output.className = "field__value";
+
+  let current = min;
+  function set(value: number) {
+    current = Math.min(max, Math.max(min, Math.round(value)));
+    input.value = String(current);
+    input.setAttribute("aria-valuetext", format(current));
+    output.textContent = format(current);
+    el.style.setProperty("--ratio", String((current - min) / Math.max(1, max - min)));
+  }
+  input.addEventListener("input", () => set(Number(input.value)));
+  set(current);
+  return { el, output, get: () => current, set };
+}
+
 export function createUI(root: HTMLElement, options: UIOptions): UI {
   let current = options.settings;
   root.innerHTML = `
@@ -169,6 +213,10 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
           <div data-size></div>
         </div>
         <div class="field">
+          <div class="field__label field__label--row" data-scroll-label><span>Scroll sensitivity</span></div>
+          <div data-scroll></div>
+        </div>
+        <div class="field">
           <span class="field__label">When time ends</span>
           <div data-blink></div>
         </div>
@@ -192,13 +240,18 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
   const blink = createDropdown(BLINKS.map((value) => ({ value, label: BLINK_LABELS[value] })));
   q("[data-position]").appendChild(position.el);
   q("[data-size]").appendChild(size.el);
+  // Seconds per step of scrolling, to the second.
+  const scroll = createSlider("Scroll sensitivity", SCROLL_SECONDS_MIN, SCROLL_SECONDS_MAX, (seconds) => `${seconds}s`);
   q("[data-blink]").appendChild(blink.el);
+  q("[data-scroll]").appendChild(scroll.el);
+  q("[data-scroll-label]").appendChild(scroll.output);
 
   const open = () => {
     milliseconds.checked = current.milliseconds;
     position.set(current.position);
     size.set(current.size);
     blink.set(current.blink);
+    scroll.set(current.scrollSeconds);
     saved.classList.remove("modal__saved--show");
     modal.classList.add("modal--open");
   };
@@ -216,6 +269,7 @@ export function createUI(root: HTMLElement, options: UIOptions): UI {
       position: position.get(),
       size: size.get(),
       blink: blink.get(),
+      scrollSeconds: scroll.get(),
     };
     await options.onSave(current);
     saved.classList.add("modal__saved--show");

@@ -20,6 +20,10 @@ export type Position = (typeof POSITIONS)[number];
 export type Size = (typeof SIZES)[number];
 export type Blink = (typeof BLINKS)[number];
 
+// The scroll sensitivity is whole seconds per step, anywhere in this range.
+export const SCROLL_SECONDS_MIN = 1;
+export const SCROLL_SECONDS_MAX = 60;
+
 export interface GlassesSettings {
   /** Show centiseconds below one hour, as the phone does. */
   milliseconds: boolean;
@@ -31,6 +35,12 @@ export interface GlassesSettings {
    * the digits blink, or their box lights up with the digits cut out of it.
    */
   blink: Blink;
+  /**
+   * The scroll sensitivity: the seconds each step of scrolling up or down on
+   * the touch bar moves the time by. The host reports scrolling only as steps,
+   * with no distance, so the change is linear in the steps.
+   */
+  scrollSeconds: number;
 }
 
 // Milliseconds are off by default: Bluetooth carries a frame at a time, so
@@ -40,10 +50,19 @@ export const DEFAULT_SETTINGS: GlassesSettings = {
   position: "left-top",
   size: "tiny",
   blink: "text",
+  scrollSeconds: 15,
 };
 
 const oneOf = <T extends string>(list: readonly T[], value: unknown, fallback: T): T =>
   (list as readonly unknown[]).includes(value) ? (value as T) : fallback;
+
+// Stored as a number; typed into a URL as a string.
+function scrollSecondsOf(value: unknown, fallback: number): number {
+  const n = typeof value === "string" && value.trim() !== "" ? Number(value) : value;
+  return Number.isInteger(n) && (n as number) >= SCROLL_SECONDS_MIN && (n as number) <= SCROLL_SECONDS_MAX
+    ? (n as number)
+    : fallback;
+}
 
 // Blink used to be a switch; a stored or typed on/off still means something.
 const blinkOf = (value: unknown, fallback: Blink): Blink =>
@@ -60,6 +79,7 @@ export function parseSettings(raw: unknown): GlassesSettings {
     position: oneOf(POSITIONS, s.position, DEFAULT_SETTINGS.position),
     size: oneOf(SIZES, s.size, DEFAULT_SETTINGS.size),
     blink: blinkOf(s.blink, DEFAULT_SETTINGS.blink),
+    scrollSeconds: scrollSecondsOf(s.scrollSeconds, DEFAULT_SETTINGS.scrollSeconds),
   };
 }
 
@@ -77,6 +97,7 @@ export function withQueryOverrides(settings: GlassesSettings, search: string): G
     position: oneOf(POSITIONS, params.get("position"), settings.position),
     size: oneOf(SIZES, params.get("size"), settings.size),
     blink: blinkOf(params.get("blink"), settings.blink),
+    scrollSeconds: scrollSecondsOf(params.get("scrollSeconds"), settings.scrollSeconds),
   };
 }
 
